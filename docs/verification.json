@@ -1,0 +1,66 @@
+{
+  "result": "PASS",
+  "version": "0.5.0",
+  "schema_id": "bihua_mvp",
+  "compiled_schema_sha256": "4d202522bfe6bbd459e26346001f705dfc36aa65959e1b4f9e6b7f6ce6c97727",
+  "settings": {
+    "fuzzy": false,
+    "association": true,
+    "prediction_pages": 5,
+    "font_size": 14,
+    "horizontal": true,
+    "page_minus": true,
+    "page_brackets": true,
+    "page_comma": false,
+    "page_tab": true,
+    "page_keypad": true
+  },
+  "generated_profile_hashes": {
+    "bihua_local.dict.yaml": "aa66c1bed7e1d02e5618e42b4605f374adc7c69120276187d6539f948e8cd8c8",
+    "bihua_local_data.lua": "05131c21946a4de0061aa6b0e56a16d39f7d14ee9004de745bfc80cfb187a974",
+    "bihua_local_associations.lua": "4e6c75f53a4c5ca4d430642551fb4ab2e8cff974e38f7408ecab689985d1355a",
+    "bihua_local_phrase_data.lua": "7b21c3d8fda2cae6505ba3a268cb32bebb9deba9400c5eb3337831a431cbd3ef"
+  },
+  "runtime_source_hashes": {
+    "bihua_association_core.lua": "f2f32acbc3a3598d0b2d071f23c04e26f31b75dd3cec4ffc3ab285d1fae5d2b4",
+    "bihua_association_runtime.lua": "1547e39045b6e55d83791e755252b1d5e115c6fabbebc7f4e5adba891f775e54",
+    "bihua_association_store.lua": "c34d3de842cc8ec594453142a0c3edd34219f9bc32964ed586efc8251a2d822c",
+    "bihua_feedback_episode.lua": "e7f9a90261de83fc015247ce78d28fa6311f8116c4e83f3ea1d4103dbc257fb1",
+    "bihua_json.lua": "0eaccda57fabc0330736de25f45cf589821a42b5e0fe02e4e3125f7dc0bf2b7e",
+    "bihua_learning_guard.lua": "24266b6fe715fe8087f9999e18762c02597942ca006dec085fe8462969503efd",
+    "bihua_matcher.lua": "8124666fe4e7639eccb1eaf3baa1cdd412f43395a1dc2edb431380bd116616e7",
+    "bihua_packed_data.lua": "c4c88e63eda6114c65e6749be744040630c18998e701edc5b30bf4744c2ba2a8",
+    "bihua_phone_phrases.lua": "6016746245ffd553f27982e19ebd2da6c9ba1a87a19bf90824a054e8547e0d49",
+    "bihua_phrase_query.lua": "007b15a44ba57da03d9c81751e7469516008d3c1104ce9beba64bc7eb3997fd0",
+    "bihua_phrase_runtime.lua": "36293b1c0f607cdfe2df45547ce5ef88357459e033650c3dd8b3093da7446857",
+    "bihua_query_keys.lua": "a0fc3c7d9db152c3a2f2a3a1bed5fdd158d81902cc9c19f83050a471a03bfaad",
+    "bihua_query_segmentor.lua": "ae31f8dfe11f365ec4783eae9655b3ea1ac38c246ff88c9c223fc08af6522aa2"
+  },
+  "source_and_compiled_configuration_verified": true,
+  "latest_windows_application_trial": "pending user experience check after sleep",
+  "previous_user_feedback": "basic stroke input and chained predictions confirmed",
+  "checked_at": "2026-10-14",
+  "previous_release_evidence": {
+    "latest_engine_core_store_feedback_native_focus": ".verification/local-rime-d1f338dcae264d358992d4a06fac5ddf/results.json",
+    "native_menu_and_COM": ".verification/native-settings-results.json",
+    "live_migration": ".verification/live-feedback-migration.json",
+    "settings_apply_and_rollback": ".verification/settings-panel-7fac45320b2a49aa95dcb1455e7fb631/results.json",
+    "personal_manager_v1_v2": ".verification/personal-manager-48e95a92b6f048a6ab821756eb95df54/results.json",
+    "association_native_lock": ".verification/association-lock-7a5ae759cf564c21a04021f0a68fbfea/results.json",
+    "association_two_process": ".verification/association-processes-c32238c21f8143a98b120278cf70db22/association-two-process-results.json"
+  },
+  "evidence": {
+    "latest_engine_core_store_feedback_native_focus": ".verification/local-rime-d1f338dcae264d358992d4a06fac5ddf/results.json",
+    "latest_engine_1_17_0": ".verification/local-rime-90cb1a0ece1f4b498422fa06a0edc5a8/results.json",
+    "native_menu_and_COM": ".verification/native-settings-results.json",
+    "live_migration": ".verification/live-feedback-migration.json",
+    "settings_apply_and_rollback": ".verification/settings-panel-7fac45320b2a49aa95dcb1455e7fb631/results.json",
+    "personal_manager_v1_v2": ".verification/personal-manager-48e95a92b6f048a6ab821756eb95df54/results.json",
+    "association_native_lock": ".verification/association-lock-7a5ae759cf564c21a04021f0a68fbfea/results.json",
+    "association_two_process": ".verification/association-processes-c32238c21f8143a98b120278cf70db22/association-two-process-results.json"
+  },
+  "remaining_manual_trials": [
+    "0.5.0 cross-application typing feel",
+    "actual logout/login startup ordering"
+  ]
+}

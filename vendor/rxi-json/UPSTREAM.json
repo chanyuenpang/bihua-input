@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/rxi/json.lua",
+  "revision": "dbf4b2dd2eb7c23be2773c89eb059dadd6436f94",
+  "license": "MIT",
+  "sha256": {
+    "json.lua": "0eaccda57fabc0330736de25f45cf589821a42b5e0fe02e4e3125f7dc0bf2b7e",
+    "LICENSE": "e91de14a15c126e70df8d30132529199211b47c5c899f82285a2ee943748f6f2"
+  },
+  "runtime_copy": "rime/lua/bihua_json.lua"
+}

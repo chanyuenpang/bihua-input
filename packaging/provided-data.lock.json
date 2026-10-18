@@ -1,0 +1,20 @@
+{
+  "profile_id": "wetype-android-4.0.0-provided-v1",
+  "source_role": "user_provided",
+  "reference_profile_id": "wetype_android_4_0_0_static_local_v1",
+  "source_apk_sha256": "940586c40ca1ddb7d7190a727c9a3e2846c5a30b290de427da8c24df814b9603",
+  "source_exports": {
+    "wechat-mobile-strokes.tsv": "5840b0fb6fadd0ca002e6eeb3aea507b157ddc7ecd0bcb0a558c5fd94398b23b",
+    "wechat-mobile-stroke-candidates.tsv": "df14c40f0495d4bea17dd062104a68448fbc8c66a60e7426e06f2622f5600c9f",
+    "wechat-mobile-full-code-scores.tsv": "a7a4e6717278ff403a6854638ed5118e367dee2dd2f865f6bfed14c655a1aae3",
+    "wechat-mobile-continuations.tsv": "aee195309421b19bdd65198940923341905dac38019b957d1d0ee304e78fad25",
+    "export-report.json": "06357c2a26c66cebb5e1c977b78ffa603b3caba19d47385b7c46a788835d83b7"
+  },
+  "generated_files": {
+    "bihua_local.dict.yaml": "aa66c1bed7e1d02e5618e42b4605f374adc7c69120276187d6539f948e8cd8c8",
+    "bihua_local_data.lua": "05131c21946a4de0061aa6b0e56a16d39f7d14ee9004de745bfc80cfb187a974",
+    "bihua_local_associations.lua": "4e6c75f53a4c5ca4d430642551fb4ab2e8cff974e38f7408ecab689985d1355a",
+    "bihua_local_phrase_data.lua": "7b21c3d8fda2cae6505ba3a268cb32bebb9deba9400c5eb3337831a431cbd3ef"
+  },
+  "selection": "Project owner explicitly requires the provided WeType mobile snapshot for product installation packages; no alternate data fallback."
+}

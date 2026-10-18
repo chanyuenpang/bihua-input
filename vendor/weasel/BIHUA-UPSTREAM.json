@@ -1,0 +1,7 @@
+{
+  "upstream": "https://github.com/rime/weasel",
+  "tag": "0.17.4",
+  "license": "GPL-3.0",
+  "modifications": "Bihua input frontend and backend; includes the exact modified native source distributed with 0.6.28.",
+  "source_archive_sha256": "0c6d129ff52e5e6d30963e11c8d228c6fe9b7f8fea2e2bfb1df7275249b8c006"
+}

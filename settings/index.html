@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>笔画 · 设置</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<aside><div class="brand"><div class="strokes">一 丨 丿 丶 𠃌</div><strong>笔画</strong><span>输入法设置</span></div>
+<nav aria-label="设置分类"><button class="active" data-panel="input">键盘与按键</button><button data-panel="mouse">鼠标面板</button><button data-panel="paging">候选与翻页</button><button data-panel="prediction">本地联想</button><button data-panel="dictionary">个人词库</button><button data-panel="appearance">外观</button></nav>
+<div class="local"><i></i> 所有设置保存在本机<br><small id="version">正在连接输入法…</small></div></aside>
+<main><header><div><p class="eyebrow">BIHUA / PREFERENCES</p><h1 id="heading">键盘与按键</h1><p id="subtitle">选择按键风格或修改笔画绑定。</p></div><span class="status" id="status">读取中</span></header>
+<form id="settings-form">
+<section id="input" class="panel active">
+<div class="columns"><article class="card"><h2>按键风格</h2>
+<label class="row"><strong>字母键</strong><select name="letter_style"><option value="standard">H S P D Z T</option><option value="asdfgt">A S D F G T</option><option value="custom">自定义</option></select></label>
+<label class="row"><strong>小键盘</strong><select name="keypad_style"><option value="standard">1 2 3 4 5 6</option><option value="789456">7 8 9 4 5 6</option><option value="custom">自定义</option></select></label>
+<div id="key-bindings"></div><p class="note">小键盘 0 等同空格；按住小键盘 . + 1–9 选择第一行候选。鼠标面板开启时，Enter 保留软件原有功能；关闭鼠标面板时，Enter 选择并收起。</p><p id="phrase-status" class="note"></p></article>
+<article class="card"><h2>输入试用</h2><div class="row"><div><strong>纯笔画 · 简体输出</strong><p>主键盘 1–9 选字；默认字母风格支持 D / N 兼容。</p></div><span class="pill">当前方案</span></div>
+<div class="row"><div><strong>候选只显示文字</strong><p>不附加联想、容错或词库来源说明。</p></div><span class="pill">固定开启</span></div>
+<h3>试试当前输入法</h3><textarea id="try-input" placeholder="切到「笔画输入法」，在这里试打…" aria-label="输入法试打"></textarea><p class="note">这里可以直接测试系统输入法，不会把试打内容上传。</p></article></div>
+</section>
+<section id="mouse" class="panel"><article class="card"><h2>鼠标面板</h2><label class="row"><strong>开启常驻鼠标面板</strong><input name="mouse_input" type="checkbox" role="switch"></label><label class="row"><strong>长按候选显示笔画</strong><input name="stroke_info" type="checkbox" role="switch"></label><p class="note">Shift / Tab 仅切换键盘中英文，鼠标仍输入中文。Enter 保留软件原有功能，不确认或清空候选。</p><p class="note">空闲时只显示笔画；输入后自动展开。</p><p class="note">更新输入法后，已打开的软件需重新打开后生效。</p></article></section>
+<section id="paging" class="panel"><article class="card"><h2>候选与翻页</h2><label class="row"><div><strong>方向键选字</strong><p>左右移动；↓ 展开五行，首行 ↑ 收起；空格 / 小键盘 0 确认。</p></div><input name="arrow_navigation" type="checkbox" role="switch"></label><h3>翻页快捷键</h3><div class="table-head"><span>启用快捷键</span><span>向上翻　向下翻</span></div>
+<label class="row"><span class="choice"><input name="page_minus" type="checkbox">减号等号</span><span class="keypair"><kbd>−</kbd><kbd>=</kbd></span></label>
+<label class="row"><span class="choice"><input name="page_brackets" type="checkbox">左右中括号</span><span class="keypair"><kbd>[</kbd><kbd>]</kbd></span></label>
+<label class="row"><span class="choice"><input name="page_comma" type="checkbox">逗号句号</span><span class="keypair"><kbd>,</kbd><kbd>.</kbd></span></label>
+<label class="row"><span class="choice"><input name="page_tab" type="checkbox">Shift + Tab / Tab</span><span class="keypair"><kbd>Shift + Tab</kbd><kbd>Tab</kbd></span></label>
+<label class="row"><span class="choice"><input name="page_keypad" type="checkbox">小键盘 − / +</span><span class="keypair"><kbd>−</kbd><kbd>+</kbd></span></label>
+<p class="note">鼠标模式的 Tab 用于切换键盘中英文；Tab 翻页仅键盘模式生效。其他快捷键只在候选栏出现时翻页。逗号句号默认关闭，便于正常输入标点。</p></article></section>
+<section id="prediction" class="panel"><article class="card"><h2>逐字联想</h2><label class="row"><div><strong>开启本地联想</strong><p>选择一个字，再继续推荐下一个字。</p></div><input name="association" type="checkbox" role="switch"></label>
+<label class="row"><div><strong>联想候选页数</strong><p>每页 9 个候选，可使用翻页快捷键浏览。</p></div><select name="prediction_pages"><option value="1">1 页 · 9 个</option><option value="3">3 页 · 27 个</option><option value="5">5 页 · 45 个</option></select></label>
+<div class="row"><div><strong>随选择调整权重</strong><p>初始 10 分；选中 +1，本回合已展示却未选 −1，最高 20 分。低于 10 分逐渐后移，0 分隐藏。没有翻到的页、重复翻页和切换窗口不扣分。</p><p>手动再次输入同一组合后，可以重新接受推荐，恢复到 10 分。权重不会按天数衰减。</p></div><span class="pill">0–20 分</span></div>
+<div class="row"><div><strong>最近手输窗口</strong><p>只保留最近 1000 个手动选出的字；联想字不占额度。</p></div><span class="pill">1000 字</span></div>
+<div class="chain"><span>星</span><b>→</b><span>河</span><b>→</b><span>计</span><b>→</b><span>划</span><p>每选一个字，确认一次前文到下一字的关系。</p></div></article></section>
+<section id="dictionary" class="panel"><article class="card"><div class="title-row"><div><h2>个人词库</h2><p>添加常用词，使用分字笔画前缀查找。</p></div><button type="button" class="secondary" id="export-words">导出</button></div>
+<div class="add-word"><label>词语<input id="word-text" placeholder="例如：中国" maxlength="4"></label><label>数字编码<input id="word-code" placeholder="留空自动填写标准笔画"></label><button type="button" id="add-word" class="secondary">保存词条</button></div>
+<p class="note">支持 2–4 字词，编码留空可自动填写。手动编码用 | 分开每个字，接受 1–5 数字或 H/S/P/D/Z 字母；同名词会更新编码。</p>
+<div class="dictionary-toolbar"><input id="word-search" type="search" placeholder="查找词条…" aria-label="查找词条"><label class="file-button">导入 TSV<input id="import-words" type="file" accept=".tsv,.txt"></label></div><div id="words" class="words"><p class="empty">正在读取个人词库…</p></div>
+</article></section>
+<section id="appearance" class="panel"><div class="columns"><article class="card"><h2>候选栏外观</h2>
+<label class="row"><strong>配色方案</strong><select name="color_scheme"></select></label>
+<label class="row"><strong>系统深色模式</strong><select name="dark_scheme"></select></label>
+<label class="row"><strong>字体</strong><input name="font_face" type="text" maxlength="160"></label>
+<label class="row"><strong>字体大小</strong><select name="font_size"><option>14</option><option>16</option><option>18</option><option>20</option><option>22</option><option>24</option></select></label>
+<label class="row"><strong>候选横排</strong><input name="horizontal" type="checkbox" role="switch"></label>
+<label class="row"><strong>圆角</strong><input name="corner_radius" type="number" min="0" max="100"></label>
+<label class="row"><strong>候选间距</strong><input name="candidate_spacing" type="number" min="0" max="100"></label>
+</article><article class="card preview-card"><h2>预览</h2><label class="row"><span>深色配色</span><input id="dark-preview" type="checkbox"></label><div id="candidate-preview"><span class="selected">1 中国</span><span>2 中文</span><span>3 中间</span></div></article></div></section>
+</form><footer><p id="save-state">读取当前设置…</p><button id="save" type="button" disabled>保存并应用</button></footer><div id="message" role="status" aria-live="polite"></div></main><script src="/app.js"></script></body></html>

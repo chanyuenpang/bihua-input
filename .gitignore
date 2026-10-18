@@ -1,0 +1,34 @@
+# Local workflow records and machine preferences
+.claw/
+
+# Local runtime, downloads, and deployment verification sandboxes
+.verification/
+__pycache__/
+*.py[cod]
+
+# Installers and generated packages are published as GitHub Release assets
+/dist/
+/build/
+*.obj
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.lib
+*.user
+*.suo
+.vs/
+.venv/
+venv/
+
+# Local credentials and input-method user records
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.userdb/
+*.userdb.*
+bihua_personal_*.tsv
+bihua_personal_*.jsonl

@@ -1,0 +1,21 @@
+#include <windows.h>
+PAYLOAD RCDATA "payload.zip"
+1 VERSIONINFO
+ FILEVERSION 0,6,28,0
+ PRODUCTVERSION 0,6,28,0
+ FILETYPE VFT_APP
+BEGIN
+ BLOCK "StringFileInfo"
+ BEGIN
+  BLOCK "040904B0"
+  BEGIN
+   VALUE "FileDescription", "Bihua Input Method Setup\0"
+   VALUE "ProductName", "Bihua Input Method\0"
+   VALUE "FileVersion", "0.6.28\0"
+  END
+ END
+ BLOCK "VarFileInfo"
+ BEGIN
+  VALUE "Translation", 0x409, 1200
+ END
+END

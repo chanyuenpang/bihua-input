@@ -1,0 +1,317 @@
+{
+  "target": "WeChat mobile Android 4.0.0 pinned APK",
+  "legacy_source": "vendor/rime-stroke/stroke.dict.yaml",
+  "comparison": "Raw character and five-category code membership; not candidate ranking, simplification, or mobile UI equivalence",
+  "mobile_reverse_records": 29517,
+  "mobile_direct_candidate_characters": 10579,
+  "mobile_reverse_characters_missing_in_legacy": 5,
+  "mobile_reverse_codes_absent_from_legacy": 70,
+  "direct_candidate_codes_absent_from_legacy": 4,
+  "samples": {
+    "疒": {
+      "mobile_primary": "41341",
+      "legacy_codes": [
+        "41341",
+        "41344"
+      ],
+      "in_mobile_candidates": true
+    },
+    "国": {
+      "mobile_primary": "25112141",
+      "legacy_codes": [
+        "25112141"
+      ],
+      "in_mobile_candidates": true
+    },
+    "玉": {
+      "mobile_primary": "11214",
+      "legacy_codes": [
+        "11214"
+      ],
+      "in_mobile_candidates": true
+    },
+    "的": {
+      "mobile_primary": "32511354",
+      "legacy_codes": [
+        "32511354"
+      ],
+      "in_mobile_candidates": true
+    },
+    "我": {
+      "mobile_primary": "3121534",
+      "legacy_codes": [
+        "3121534",
+        "3151543"
+      ],
+      "in_mobile_candidates": true
+    },
+    "天": {
+      "mobile_primary": "1134",
+      "legacy_codes": [
+        "1134"
+      ],
+      "in_mobile_candidates": true
+    },
+    "必": {
+      "mobile_primary": "45434",
+      "legacy_codes": [
+        "45434",
+        "45443"
+      ],
+      "in_mobile_candidates": true
+    },
+    "万": {
+      "mobile_primary": "153",
+      "legacy_codes": [
+        "135",
+        "153"
+      ],
+      "in_mobile_candidates": true
+    },
+    "丑": {
+      "mobile_primary": "5211",
+      "legacy_codes": [
+        "5211"
+      ],
+      "in_mobile_candidates": true
+    }
+  },
+  "mismatch_examples": [
+    {
+      "character": "ㄠ",
+      "mobile_primary": "55111",
+      "legacy_codes": []
+    },
+    {
+      "character": "㒊",
+      "mobile_primary": "3253421215342121",
+      "legacy_codes": [
+        "3253453421212121"
+      ]
+    },
+    {
+      "character": "㒯",
+      "mobile_primary": "241351221122112",
+      "legacy_codes": [
+        "243135121211212112",
+        "2431351221122112",
+        "243135211212112112"
+      ]
+    },
+    {
+      "character": "㒴",
+      "mobile_primary": "3252252",
+      "legacy_codes": [
+        "3425252",
+        "3452252"
+      ]
+    },
+    {
+      "character": "㔡",
+      "mobile_primary": "325341153553",
+      "legacy_codes": [
+        "325341151553"
+      ]
+    },
+    {
+      "character": "㘅",
+      "mobile_primary": "2513323411243112",
+      "legacy_codes": [
+        "25133234112431112",
+        "25133234112431115"
+      ]
+    },
+    {
+      "character": "㛏",
+      "mobile_primary": "5311243344",
+      "legacy_codes": [
+        "5311241344",
+        "5311544344"
+      ]
+    },
+    {
+      "character": "㝳",
+      "mobile_primary": "12444",
+      "legacy_codes": [
+        "12344",
+        "15444"
+      ]
+    },
+    {
+      "character": "㦼",
+      "mobile_primary": "11134321511154",
+      "legacy_codes": [
+        "111343215111534",
+        "111343215111543"
+      ]
+    },
+    {
+      "character": "㨌",
+      "mobile_primary": "1214531123534",
+      "legacy_codes": [
+        "1214531123554",
+        "1214531153554"
+      ]
+    },
+    {
+      "character": "㪜",
+      "mobile_primary": "2521325112154",
+      "legacy_codes": [
+        "2521325222154",
+        "2521325223134"
+      ]
+    },
+    {
+      "character": "㮇",
+      "mobile_primary": "123411342344",
+      "legacy_codes": [
+        "123411342444",
+        "123411345444"
+      ]
+    },
+    {
+      "character": "㱝",
+      "mobile_primary": "13543553",
+      "legacy_codes": [
+        "13541553"
+      ]
+    },
+    {
+      "character": "㹻",
+      "mobile_primary": "3533134531",
+      "legacy_codes": [
+        "35331234531"
+      ]
+    },
+    {
+      "character": "㺈",
+      "mobile_primary": "3532521251214",
+      "legacy_codes": [
+        "3535221251214",
+        "3535231251214"
+      ]
+    },
+    {
+      "character": "䃶",
+      "mobile_primary": "132514125221241343543",
+      "legacy_codes": [
+        "132514125221241343534",
+        "132514125221244343534"
+      ]
+    },
+    {
+      "character": "䇐",
+      "mobile_primary": "4143151124143",
+      "legacy_codes": [
+        "4143151124134",
+        "4143151154434"
+      ]
+    },
+    {
+      "character": "䋷",
+      "mobile_primary": "545233154554234",
+      "legacy_codes": [
+        "545233134554234",
+        "545533134554534"
+      ]
+    },
+    {
+      "character": "䍧",
+      "mobile_primary": "3112431112",
+      "legacy_codes": [
+        "3121431112"
+      ]
+    },
+    {
+      "character": "䒄",
+      "mobile_primary": "3354145125125121",
+      "legacy_codes": [
+        "33541445125125121",
+        "33544145125125121"
+      ]
+    },
+    {
+      "character": "䒟",
+      "mobile_primary": "1223514",
+      "legacy_codes": [
+        "12123541",
+        "1223541",
+        "21123541"
+      ]
+    },
+    {
+      "character": "䓙",
+      "mobile_primary": "12231221153",
+      "legacy_codes": [
+        "121231221115",
+        "12231221135",
+        "211231221115"
+      ]
+    },
+    {
+      "character": "䔼",
+      "mobile_primary": "12253421215342121",
+      "legacy_codes": [
+        "121253453421212121",
+        "12253453421212121",
+        "211253453421212121"
+      ]
+    },
+    {
+      "character": "䕟",
+      "mobile_primary": "122311251251511134",
+      "legacy_codes": [
+        "12123211251251511134",
+        "1223211251251511134",
+        "21122512513211511134"
+      ]
+    },
+    {
+      "character": "䗰",
+      "mobile_primary": "251214251212511134",
+      "legacy_codes": [
+        "25121455212511134"
+      ]
+    },
+    {
+      "character": "䝲",
+      "mobile_primary": "251113451344",
+      "legacy_codes": [
+        "2511134513444"
+      ]
+    },
+    {
+      "character": "䠮",
+      "mobile_primary": "251212143113412111254444",
+      "legacy_codes": [
+        "25121214311341211254444",
+        "25121214311342111254444"
+      ]
+    },
+    {
+      "character": "䡭",
+      "mobile_primary": "12511124311135121",
+      "legacy_codes": [
+        "12511124311135211",
+        "125111243112135211"
+      ]
+    },
+    {
+      "character": "䡵",
+      "mobile_primary": "1251112341353334454",
+      "legacy_codes": [
+        "1251112431353334454",
+        "12511124313533344554"
+      ]
+    },
+    {
+      "character": "䢭",
+      "mobile_primary": "431121414534454",
+      "legacy_codes": [
+        "431121413534454",
+        "4311214413534454",
+        "43112144435344554"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+# Preserve source snapshots, UTF-16 resources and hash-locked data byte-for-byte.
+* -text

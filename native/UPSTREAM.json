@@ -1,0 +1,21 @@
+{
+  "url": "https://codeload.github.com/rime/weasel/tar.gz/refs/tags/0.17.4",
+  "sha256": "76c9ff46a90d09086e1b355cb331d609f985a1fe8f12c2ab03b7b3ea01c34c96",
+  "tag": "0.17.4",
+  "license": "GPL-3.0",
+  "rime": {
+    "version": "1.13.1",
+    "archive_sha256": "05fcf8cc2d058a0186dd9f04d6e021ad41687db50dc81e85cf655dfabfdf0009"
+  },
+  "boost": {
+    "version": "1.84.0",
+    "url": "https://archives.boost.io/release/1.84.0/source/boost_1_84_0.7z",
+    "sha256": "81a4d10075731966477276c47324ecd9cac02da49899d36c48eba66e40014f25"
+  },
+  "build": {
+    "toolchain": "VS2022 v143",
+    "configuration": "Release/x64",
+    "static_runtime": true
+  },
+  "patch_is_review_diff": "UTF-16 resource files are applied by Patch-Native-Source.py; this UTF-8 diff is for review"
+}

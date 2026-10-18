@@ -1,0 +1,28 @@
+name: Source checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Install development dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Prepare isolated test output
+        shell: pwsh
+        run: New-Item -ItemType Directory -Force .verification | Out-Null
+      - name: Verify pinned product data
+        run: python -B scripts/Test-Provided-Data.py
+      - name: Verify personal-stroke save transactions
+        run: python -B scripts/Test-Personal-Stroke-Save.py
+      - name: Verify installer migration and rollback
+        run: python -B scripts/Test-Release-Transactions.py
