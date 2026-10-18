@@ -83,7 +83,7 @@ def main():
         for name in ['Manage-Personal.py','personal_strokes.py','personal_data.py']:
             shutil.copy2(ROOT/'scripts'/name,app/'scripts'/name)
         cli_user=sandbox/'cli-user';cli_user.mkdir();receipt=sandbox/'receipt.json'
-        command=[sys.executable,'-B',str(app/'scripts/Manage-Personal.py'),'strokes','upsert','--rime-dir',str(cli_user),'--char=一','--codes=1','--json','--result-file',str(receipt)]
+        command=[sys.executable,'-X','utf8','-B',str(app/'scripts/Manage-Personal.py'),'strokes','upsert','--rime-dir',str(cli_user),'--char=一','--codes=1','--json','--result-file',str(receipt)]
         output=subprocess.run(command,capture_output=True,check=True,encoding='utf-8')
         result=json.loads(output.stdout);ack=json.loads(receipt.read_text(encoding='utf-8'))
         assert result['skipped_system'] and ack['status']=='applied' and ack['skipped_system']
