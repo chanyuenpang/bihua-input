@@ -132,7 +132,7 @@ end, func=matcher.func, fini=matcher.fini}
         shutil.copy2(args.profile / 'bihua_local.dict.yaml', user)
         shutil.copy2(args.profile / 'bihua_local.manifest.json', user)
         shutil.copy2(args.profile / 'bihua_local_data.lua', user / 'lua')
-        for name in ('bihua_matcher.lua', 'bihua_learning_guard.lua', 'bihua_packed_data.lua', 'bihua_association_filter.lua', 'bihua_personal_stroke_runtime.lua'):
+        for name in ('bihua_matcher.lua', 'bihua_character_learning.lua', 'bihua_learning_guard.lua', 'bihua_packed_data.lua', 'bihua_association_filter.lua', 'bihua_personal_stroke_runtime.lua'):
             shutil.copy2(root / 'rime/lua' / name, user / 'lua')
         (user / 'default.custom.yaml').write_text('patch:\n  schema_list:\n    - schema: bihua_local\n', encoding='utf-8')
     expected = {}

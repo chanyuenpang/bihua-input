@@ -9,6 +9,7 @@
 #include <BihuaMousePanel.h>
 #include <BihuaMouseView.h>
 #include <BihuaStrokeInfo.h>
+#include <BihuaNumLock.h>
 #include <mutex>
 #include <atomic>
 
@@ -77,6 +78,8 @@ class RimeWithWeaselHandler : public weasel::RequestHandler {
   void _QueueMouseAction(int action,int index,DWORD displayed_generation,uint64_t revision,uint64_t view);
   void _MouseDisplayed(DWORD generation,uint64_t revision,int first,int count);
   void _BeforeMouseMutation(DWORD session);
+  void _UpdateNumLock();
+  BihuaNumLockGuard m_numlock;
   void _UpdateMouse(DWORD session);
   bool _MouseHeartbeat();
   bool _MouseTargetValid();

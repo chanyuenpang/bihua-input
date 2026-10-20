@@ -10,7 +10,7 @@ from key_bindings import LETTER, KEYPAD
 import release_profile
 
 ROOT=Path(__file__).resolve().parent.parent
-VERSION='0.6.28'
+VERSION='0.6.29'
 OUT=ROOT/'.verification/release'/VERSION
 APP=OUT/'payload'
 DIST=ROOT/'dist'
@@ -63,7 +63,7 @@ def build():
     (profile/'bihua_mvp.schema.yaml').write_text(yaml.safe_dump(schema,allow_unicode=True,sort_keys=False),encoding='utf-8')
     (profile/'default.custom.yaml').write_text('patch:\n  schema_list:\n    - schema: bihua_mvp\n',encoding='utf-8')
     (profile/'weasel.custom.yaml').write_text('patch:\n  style/font_point: 18\n  style/horizontal: true\n',encoding='utf-8')
-    notice='''笔画输入法 0.6.28 测试版
+    notice='''笔画输入法 0.6.29 测试版
 
 Windows 前端基于 Weasel 0.17.4，GNU GPL v3。修改后前端与后台源代码随安装包提供。
 Rime 1.13.1: BSD-3-Clause, https://github.com/rime/librime
@@ -95,7 +95,7 @@ The installer contains no personal dictionary, personal stroke aliases or learne
         for folder in ['native','rime','settings','packaging','assets']:
             for path in (ROOT/folder).rglob('*'):
                 if path.is_file() and '__pycache__' not in path.parts: z.write(path,'project/'+path.relative_to(ROOT).as_posix())
-        for name in ['Build-Release.py','Build-Open-Profile.py','Build-Local-Profile.py','Build-Provided-Profile.py','release_profile.py','Test-Provided-Data.py','Test-Provided-Rime.py','Settings-Panel.py','Native-Settings.py','appearance.py','Open-Settings.ps1','Manage-Personal.py','personal_data.py','personal_strokes.py','Test-Personal-Strokes.py','Test-Personal-Stroke-Save.py','key_bindings.py','stroke_icons.py','Test-Release-Transactions.py','Test-Installer-Scheduler.py','Test-Appearance.py','Test-Settings-Panel.py','Patch-Single-Menu.py','Patch-Native-Source.py','Patch-Native-Menus.py','Patch-Independent-Profile.py','Patch-Mouse-Input.py']:
+        for name in ['Build-Release.py','Build-Open-Profile.py','Build-Local-Profile.py','Build-Provided-Profile.py','release_profile.py','Test-Provided-Data.py','Test-Provided-Rime.py','Test-Keypad-Learning.py','Settings-Panel.py','Native-Settings.py','appearance.py','Open-Settings.ps1','Manage-Personal.py','personal_data.py','personal_strokes.py','Test-Personal-Strokes.py','Test-Personal-Stroke-Save.py','key_bindings.py','stroke_icons.py','Test-Release-Transactions.py','Test-Installer-Scheduler.py','Test-Appearance.py','Test-Settings-Panel.py','Patch-Single-Menu.py','Patch-Native-Source.py','Patch-Native-Menus.py','Patch-Independent-Profile.py','Patch-Mouse-Input.py']:
             z.write(ROOT/'scripts'/name,'project/scripts/'+name)
         lock=release_profile.verified_source()
         for name in lock['source_exports']:

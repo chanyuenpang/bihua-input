@@ -23,9 +23,13 @@ translator:
   enable_sentence: false
   enable_completion: true
 bihua_matcher:
+  character_learning: true
   personal_association: false
   static_association: false
   phrase_enabled: false
+bihua_character:
+  dictionary: bihua_local
+  user_dict: bihua_mvp_character_v1
 menu:
   page_size: 9
 simplifier:

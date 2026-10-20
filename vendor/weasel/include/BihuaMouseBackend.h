@@ -38,6 +38,7 @@ bool RimeWithWeaselHandler::_MouseTargetValid() {
 bool RimeWithWeaselHandler::_MouseHeartbeat() {
   std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);
   if(!m_mouse_panel)return false;
+  _UpdateNumLock();
   m_mouse_panel->SetProfileActive(_MouseProfileVisible());
   auto mode_session=_MouseProfileSession();auto mode=m_mouse_profiles.find(mode_session);
   m_mouse_panel->SetModeAvailable(mode_session!=0);
@@ -56,6 +57,7 @@ bool RimeWithWeaselHandler::_MouseHeartbeat() {
 }
 void RimeWithWeaselHandler::_UpdateMouse(DWORD session) {
   std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);
+  _UpdateNumLock();
   if(!m_mouse_panel)return;
   m_mouse_panel->SetProfileActive(_MouseProfileVisible());
   weasel::Context context;auto style=m_base_style;
@@ -100,6 +102,18 @@ void RimeWithWeaselHandler::_UpdateMouse(DWORD session) {
   auto mode_session=_MouseProfileSession();auto profile=m_mouse_profiles.find(mode_session);
   m_mouse_panel->SetModeAvailable(mode_session!=0);
   m_mouse_panel->SetKeyboardMode(profile==m_mouse_profiles.end()?-1:profile->second.mode);
+}
+void RimeWithWeaselHandler::_UpdateNumLock(){
+  auto session=_MouseProfileSession();auto profile=m_mouse_profiles.find(session);
+  HWND front=GetForegroundWindow();DWORD pid=0;auto thread=GetWindowThreadProcessId(front,&pid);
+  GUITHREADINFO info{sizeof(info)};
+  bool valid=!m_disabled&&session&&session==m_mouse_state.session&&
+      profile!=m_mouse_profiles.end()&&profile->second.active&&profile->second.pid==pid&&
+      GetGUIThreadInfo(thread,&info)&&info.hwndFocus;
+  DWORD focus_pid=0;auto focus_thread=info.hwndFocus?GetWindowThreadProcessId(info.hwndFocus,&focus_pid):0;
+  valid=valid&&focus_pid==pid&&focus_thread==profile->second.thread;
+  valid=valid&&BihuaPersonalKeyCapture::SafeForeground(front);
+  m_numlock.Publish(valid?front:nullptr,valid?info.hwndFocus:nullptr);
 }
 void RimeWithWeaselHandler::_MouseDisplayed(DWORD generation,uint64_t revision,int first,int count){
   std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);

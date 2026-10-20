@@ -117,7 +117,7 @@ def powershell(script):
     return result.stdout.decode('utf-8-sig',errors='replace').strip()
 def verify():
     manifest=json.loads((APP/'release-manifest.json').read_text(encoding='utf-8-sig'))
-    assert manifest['product']=='BihuaInput' and manifest['version']=='0.6.28'
+    assert manifest['product']=='BihuaInput' and manifest['version']=='0.6.29'
     for name,expected in manifest['files'].items():
         target=(APP/name).resolve();assert target.is_relative_to(APP)
         if not target.is_file() or hashlib.sha256(target.read_bytes()).hexdigest()!=expected:raise ValueError('安装文件损坏：'+name)
@@ -191,7 +191,7 @@ def install():
             helper('--activate');run(['schtasks','/Run','/TN','BihuaInputMethod'],capture_output=True)
             wait_for_server()
             return {'result':'PASS','already_installed':True,'frontend_reload_policy':'reopen_existing_applications'}
-    if APP.resolve()!= (HOME/'0.6.28').resolve():raise ValueError('安装目录不是本机用户目录，请双击安装程序')
+    if APP.resolve()!= (HOME/'0.6.29').resolve():raise ValueError('安装目录不是本机用户目录，请双击安装程序')
     machine_profile()
     backup=HOME/'installer-backups'/uuid.uuid4().hex;backup.mkdir(parents=True)
     old_profile=helper('--inspect')
@@ -244,7 +244,7 @@ def install():
         (APP/'settings-script.txt').write_text(str(APP/'scripts/Open-Settings.ps1')+'\n',encoding='utf-8')
         setreg(r'Software\Rime\Weasel','RimeUserDir',str(user))
         setreg(r'Software\Microsoft\Windows\CurrentVersion\Run','BihuaWeasel','schtasks.exe /Run /TN "BihuaInputMethod"')
-        previous_global.write_text(json.dumps({'status':'installed','version':'0.6.28','directory':str(APP)},indent=2),encoding='utf-8')
+        previous_global.write_text(json.dumps({'status':'installed','version':'0.6.29','directory':str(APP)},indent=2),encoding='utf-8')
         create_task()
         run([APP/'WeaselDeployer.exe','/deploy'])
         assert (user/'build/bihua_mvp.schema.yaml').exists(),'输入方案编译失败'
@@ -252,7 +252,7 @@ def install():
         run(['schtasks.exe','/Run','/TN','BihuaInputMethod'],capture_output=True);time.sleep(1)
         wait_for_server()
         path=r'Software\Microsoft\Windows\CurrentVersion\Uninstall\BihuaInput'
-        for name,value in {'DisplayName':'笔画输入法','DisplayVersion':'0.6.28','Publisher':'笔画输入法项目','InstallLocation':str(APP),'UninstallString':'"'+str(APP/'Uninstall.exe')+'"'}.items():setreg(path,name,value)
+        for name,value in {'DisplayName':'笔画输入法','DisplayVersion':'0.6.29','Publisher':'笔画输入法项目','InstallLocation':str(APP),'UninstallString':'"'+str(APP/'Uninstall.exe')+'"'}.items():setreg(path,name,value)
         for name in ['NoModify','NoRepair']:setreg(path,name,1,winreg.REG_DWORD)
         start=Path(os.environ['APPDATA'])/'Microsoft/Windows/Start Menu/Programs/笔画输入法';start.mkdir(parents=True,exist_ok=True)
         for name,target in [('笔画设置',APP/'BihuaSettingsLauncher.exe'),('卸载笔画输入法',APP/'Uninstall.exe')]:

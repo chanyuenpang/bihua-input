@@ -118,12 +118,14 @@ class PipeServer : public PipeChannel<DWORD, PipeMessage> {'''),
 ipc=SRC/'WeaselIPCServer/WeaselServerImpl.cpp'
 ipc.write_text(ipc.read_text(encoding='utf-8-sig').replace('*channel << msg','*m_request_channel << msg'),encoding='utf-8-sig')
 edit('include/RimeWithWeasel.h',[
-('#include <rime_api.h>','#include <rime_api.h>\n#include <BihuaMouseState.h>\n#include <BihuaMousePanel.h>\n#include <BihuaMouseView.h>\n#include <BihuaStrokeInfo.h>\n#include <mutex>\n#include <atomic>'),
+('#include <rime_api.h>','#include <rime_api.h>\n#include <BihuaMouseState.h>\n#include <BihuaMousePanel.h>\n#include <BihuaMouseView.h>\n#include <BihuaStrokeInfo.h>\n#include <BihuaNumLock.h>\n#include <mutex>\n#include <atomic>'),
 ('  virtual void FocusIn(', '  virtual DWORD MouseCommand(WEASEL_IPC_COMMAND command,DWORD value,DWORD session,EatLine eat);\n  virtual void FocusIn('),
 ('  void _Setup();','''  void _Setup();
   void _QueueMouseAction(int action,int index,DWORD displayed_generation,uint64_t revision,uint64_t view);
   void _MouseDisplayed(DWORD generation,uint64_t revision,int first,int count);
   void _BeforeMouseMutation(DWORD session);
+  void _UpdateNumLock();
+  BihuaNumLockGuard m_numlock;
   void _UpdateMouse(DWORD session);
   bool _MouseHeartbeat();
   bool _MouseTargetValid();
@@ -303,6 +305,6 @@ edit('WeaselTSF/CandidateList.cpp',[
 ('void CCandidateList::UpdateUI(const Context& ctx, const Status& status) {','void CCandidateList::UpdateUI(const Context& ctx, const Status& status) {\n  if(_tsf->MousePanelEnabled()){Show(FALSE);return;}'),
 ('void CCandidateList::StartUI() {','void CCandidateList::StartUI() {\n  if(_tsf->MousePanelEnabled())return;'),
 ('void WeaselTSF::_ShowUI() {','void WeaselTSF::_ShowUI() {\n  if(_mousePanelEnabled)return;')])
-for name in ('BihuaMouseState.h','BihuaMousePanel.h','BihuaMouseView.h','BihuaStrokeInfo.h','BihuaKeyboardRoute.h','BihuaPersonalRecorder.h','BihuaPersonalKeys.h'):shutil.copy2(ROOT/'native'/name,SRC/'include'/name)
+for name in ('BihuaMouseState.h','BihuaMousePanel.h','BihuaMouseView.h','BihuaStrokeInfo.h','BihuaKeyboardRoute.h','BihuaPersonalRecorder.h','BihuaPersonalKeys.h','BihuaNumLock.h'):shutil.copy2(ROOT/'native'/name,SRC/'include'/name)
 shutil.copy2(ROOT/'native/BihuaMouseTSF.h',SRC/'WeaselTSF/BihuaMouseTSF.h')
 print('Native mouse server/IPC patch applied')

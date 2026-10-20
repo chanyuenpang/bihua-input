@@ -11,6 +11,7 @@ function M.init(env)
   env.personal_runtime = require("bihua_personal_stroke_runtime")
   env.format_preedit = M.preedit
   local config = env.engine.schema.config
+  require('bihua_character_learning').init(env)
   if config:get_bool("bihua_matcher/phrase_enabled") then
     env.phrase_runtime = require("bihua_phrase_runtime")
     env.phrase_runtime.init(env)
@@ -28,6 +29,7 @@ function M.init(env)
 end
 
 function M.fini(env)
+  require('bihua_character_learning').fini(env)
   if env.phrase_runtime then env.phrase_runtime.fini(env) end
   if env.association_runtime then env.association_runtime.fini(env) end
   if env.reset_selection then env.reset_selection:disconnect(); env.reset_selection = nil end
@@ -54,6 +56,7 @@ function M.func(input, segment, env)
   end
   table.sort(rows,function(a,b) return a.score~=b.score and a.score>b.score or
                                           a.score==b.score and a.order<b.order end)
+  require('bihua_character_learning').rank(rows,env)
   for rank,row in ipairs(rows) do
     if rank>120 then break end
     local candidate = Candidate(row.personal and 'bihua_personal_stroke' or 'bihua_direct',segment.start,segment._end,row.text,'')

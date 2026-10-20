@@ -121,7 +121,7 @@ class Window:
         self.brushes={name:g.CreateSolidBrush(color) for name,color in COLORS.items()}
         self.instance=k.GetModuleHandleW(None)
         self.proc=PROC(self.wndproc)
-        wc=WNDCLASS(0,self.proc,0,0,self.instance,None,u.LoadCursorW(None,c.c_void_p(32512)),self.brushes['background'],None,'BihuaNativeSettingsV15')
+        wc=WNDCLASS(0,self.proc,0,0,self.instance,None,u.LoadCursorW(None,c.c_void_p(32512)),self.brushes['background'],None,'BihuaNativeSettingsV16')
         if not u.RegisterClassW(c.byref(wc)) and c.get_last_error()!=1410: raise c.WinError(c.get_last_error())
         self.hwnd=u.CreateWindowExW(0,wc.name,'笔画设置',0x00ca0000,100,40,int(980*self.scale),int(620*self.scale),None,None,self.instance,None)
         if not self.hwnd: raise c.WinError(c.get_last_error())
@@ -359,6 +359,7 @@ class Window:
                 name=device+'_'+action
                 self.key_values[name]=''
                 self.button('',x,y,236,lambda n=name:self.arm_capture(n),'keys',name)
+        self.label('空闲数字键依次选字；按住小键盘 . 可用 1–9 选字。',246,510,650,page='keys')
         self.label('候选与翻页',246,32,height=38,page='paging')
         self.checkbox('arrow_navigation','方向键选字 · ↓ 展开五行，首行 ↑ 收起',100,'paging',246,650)
         self.label('左右移动；空格 / 小键盘 0 确认。',246,142,650,page='paging')
@@ -790,7 +791,7 @@ def main():
     parser.add_argument('--smoke',type=Path)
     parser.add_argument('--page',choices=[page for page,_ in PAGES],default='keys')
     args=parser.parse_args()
-    previous=u.FindWindowW('BihuaNativeSettingsV15',None)
+    previous=u.FindWindowW('BihuaNativeSettingsV16',None)
     if previous and not args.smoke:
         u.SendMessageW(previous,0x8002,[page for page,_ in PAGES].index(args.page),0);return
     Window(panel.Settings(args.rime_dir),args.smoke,args.page).run()

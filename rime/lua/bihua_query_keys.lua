@@ -16,6 +16,13 @@ function M.init(env)
   if (config:get_string('bihua_keys/letter_style') or 'standard')=='standard' then
     env.bindings[string.byte('n')]='n'
   end
+  -- Number the remaining physical digits in keypad order. Configured strokes
+  -- and operators always win; dot-held selection still uses printed numbers.
+  env.free_digits={}
+  local index=0
+  for code=0xffb1,0xffb9 do
+    if not env.bindings[code] then index=index+1;env.free_digits[code]=index end
+  end
 end
 function M.func(key, env)
   if env.forwarding then return 2 end
@@ -36,15 +43,20 @@ function M.func(key, env)
     env.select_held=not key:release()
     return 1
   end
-  if key:release() or key:ctrl() or key:alt() or key:shift() then return 2 end
+  if key:ctrl() or key:alt() or key:shift() then
+    if env.free_digits[code] or env.select_held and code>=0xffb1 and code<=0xffb9 then return 0 end
+    return 2
+  end
+  if key:release() then return 2 end
   local send
-  if env.select_held and code>=0xffb1 and code<=0xffb9 then
+  local selection=env.select_held and code>=0xffb1 and code<=0xffb9 and code-0xffb0 or env.free_digits[code]
+  if selection then
     if not ctx:has_menu() then return 1 end
     local segment=ctx.composition:back()
     local size=env.engine.schema.config:get_int('menu/page_size') or 9
     local page=math.floor(segment.selected_index/size)
-    if code-0xffb0>size or not segment.menu:get_candidate_at(page*size+code-0xffb1) then return 1 end
-    send=tostring(code-0xffb0)
+    if selection>size or not segment.menu:get_candidate_at(page*size+selection-1) then return 1 end
+    send=tostring(selection)
   elseif code==0xffab or code==0xffad then
     if not ctx:has_menu() then return 2 end
     if env.engine.schema.config:get_bool('bihua_keys/page_keypad')==false then return 2 end

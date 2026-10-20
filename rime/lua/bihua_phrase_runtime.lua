@@ -128,6 +128,7 @@ function M.translate(input, segment, env)
     end
     table.sort(rows, function(a, b) return a.score ~= b.score and a.score > b.score or
                                               (a.score == b.score and a.text < b.text) end)
+    require('bihua_character_learning').rank(rows,env)
     for rank, row in ipairs(rows) do
       if rank>120 then break end
       local candidate = Candidate(row.personal and "bihua_personal_stroke" or "bihua_wildcard", segment.start, segment._end, row.text, "")
