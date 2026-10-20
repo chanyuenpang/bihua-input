@@ -74,7 +74,7 @@ def main():
         maintain(1);join();session=create();assert select(session,b'bihua_local')
         def query(code):
             clear(session)
-            for char in code:key(session,{'|':0xffb7,'?':0xffb6}.get(char,ord(char)),0)
+            for char in code:key(session,{'|':0xffae,'?':0xffb6}.get(char,ord(char)),0)
             value=abi.initialized(abi.Context);assert ctx(session,c.byref(value))
             try:return {'preedit':abi.text(value.composition.preedit),'candidates':[abi.text(value.menu.candidates[i].text) for i in range(value.menu.num_candidates)]}
             finally:free(c.byref(value))

@@ -10,7 +10,7 @@ from key_bindings import LETTER, KEYPAD
 import release_profile
 
 ROOT=Path(__file__).resolve().parent.parent
-VERSION='0.6.29'
+VERSION='0.6.30'
 OUT=ROOT/'.verification/release'/VERSION
 APP=OUT/'payload'
 DIST=ROOT/'dist'
@@ -63,7 +63,7 @@ def build():
     (profile/'bihua_mvp.schema.yaml').write_text(yaml.safe_dump(schema,allow_unicode=True,sort_keys=False),encoding='utf-8')
     (profile/'default.custom.yaml').write_text('patch:\n  schema_list:\n    - schema: bihua_mvp\n',encoding='utf-8')
     (profile/'weasel.custom.yaml').write_text('patch:\n  style/font_point: 18\n  style/horizontal: true\n',encoding='utf-8')
-    notice='''笔画输入法 0.6.29 测试版
+    notice='''笔画输入法 0.6.30 测试版
 
 Windows 前端基于 Weasel 0.17.4，GNU GPL v3。修改后前端与后台源代码随安装包提供。
 Rime 1.13.1: BSD-3-Clause, https://github.com/rime/librime

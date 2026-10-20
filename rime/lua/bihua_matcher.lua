@@ -1,7 +1,7 @@
 -- Standard stroke-prefix candidates.
 -- Generated data is local research; the module contains no commercial data.
 local M = {}
-local stroke_symbols = {h="一", s="丨", p="丿", n="丶", d="丶", z="𠃌", ["|"]="｜", ["?"]="？"}
+local stroke_symbols = {h="一", s="丨", p="丿", n="丶", d="丶", z="𠃌", ["|"]="‘", ["?"]="？"}
 function M.preedit(input)
   return (input:gsub(".", function(char) return stroke_symbols[char] or char end))
 end

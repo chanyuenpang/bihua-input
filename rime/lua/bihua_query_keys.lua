@@ -2,7 +2,7 @@
 local Query = require("bihua_phrase_query")
 local M = {}
 local defaults = {letter={h='h',s='s',p='p',n='d',z='z',wildcard='t',separator='f'},
-                  keypad={h='KP_1',s='KP_2',p='KP_3',n='KP_4',z='KP_5',wildcard='KP_6',separator='KP_7'}}
+                  keypad={h='KP_1',s='KP_2',p='KP_3',n='KP_4',z='KP_5',wildcard='KP_6',separator='KP_Decimal'}}
 local targets = {h='h',s='s',p='p',n='n',z='z',wildcard='KP_6',separator='KP_7'}
 function M.init(env)
   env.bindings = {}
@@ -39,7 +39,7 @@ function M.func(key, env)
   end
   local code=key.keycode
   if ctx:get_option('ascii_mode') then return 2 end
-  if code==0xffae and not key:ctrl() and not key:alt() then
+  if code==0xffae and not env.bindings[code] and not key:ctrl() and not key:alt() then
     env.select_held=not key:release()
     return 1
   end
@@ -57,6 +57,12 @@ function M.func(key, env)
     local page=math.floor(segment.selected_index/size)
     if selection>size or not segment.menu:get_candidate_at(page*size+selection-1) then return 1 end
     send=tostring(selection)
+  elseif (code==0xffaf or code==0xffaa) and not env.bindings[code] then
+    if not ctx:has_menu() then return 1 end
+    -- Rime's vertical navigator means previous/next candidate regardless of
+    -- the candidate window's visual orientation. The mouse backend reuses its
+    -- own left/right cursor when that view is available.
+    send=code==0xffaf and 'Up' or 'Down'
   elseif code==0xffab or code==0xffad then
     if not ctx:has_menu() then return 2 end
     if env.engine.schema.config:get_bool('bihua_keys/page_keypad')==false then return 2 end

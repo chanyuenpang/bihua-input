@@ -65,6 +65,10 @@ def main():
             service.apply(service.preview(changed)['preview_id'])
             assert service.state()['settings']==changed
     service.apply(service.preview(settings)['preview_id'])
+    dotted=dict(settings,keypad_style='custom',keypad_keys=dict(settings['keypad_keys'],separator='KP_Decimal'))
+    service.apply(service.preview(dotted)['preview_id'])
+    assert service.state()['settings']==dotted
+    service.apply(service.preview(settings)['preview_id'])
     disabled=dict(settings,stroke_info=False,arrow_navigation=False)
     service.apply(service.preview(disabled)['preview_id'])
     assert service.state()['settings']==disabled

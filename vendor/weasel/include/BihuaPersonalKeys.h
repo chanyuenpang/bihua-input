@@ -20,6 +20,7 @@ struct BihuaPersonalKeyMap {
       if(number.size()==4&&number.substr(0,3)=="KP_"&&number[3]>='1'&&number[3]<='9')map.keypad[i]=VK_NUMPAD1+number[3]-'1';
       else if(number=="KP_Divide")map.keypad[i]=VK_DIVIDE;
       else if(number=="KP_Multiply")map.keypad[i]=VK_MULTIPLY;
+      else if(number=="KP_Decimal")map.keypad[i]=VK_DECIMAL;
       else return {};
       for(int j=0;j<i;++j)if(map.letters[i]==map.letters[j]||map.keypad[i]==map.keypad[j])return {};
     }
@@ -32,6 +33,7 @@ struct BihuaPersonalKeyMap {
         case 0x4f:return VK_NUMPAD1;case 0x50:return VK_NUMPAD2;case 0x51:return VK_NUMPAD3;
         case 0x4b:return VK_NUMPAD4;case 0x4c:return VK_NUMPAD5;case 0x4d:return VK_NUMPAD6;
         case 0x47:return VK_NUMPAD7;case 0x48:return VK_NUMPAD8;case 0x49:return VK_NUMPAD9;
+        case 0x53:return VK_DECIMAL;
         case 0x37:return VK_MULTIPLY;
       }
     }else if(key.scanCode==0x35)return VK_DIVIDE;

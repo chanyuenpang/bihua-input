@@ -52,14 +52,18 @@ def probe(runtime,user):
         assert state()['candidates'],'a real public-data continuation is required'
         key('h');assert '一' in state()['candidates'],'the normal horizontal-stroke first candidate must remain visible'
         query('h');key(0xffab);assert state()['page']==1
-        key(0xffae);chosen=state()['candidates'][1];key(0xffb2);assert committed()==chosen
+        chosen=state()['candidates'][1];key(0xffb8);assert committed()==chosen
+        query('sz');key(0xffae)
+        assert state()['preedit'].endswith('‘') and not committed(),state()
         key(0xffae,1<<30)
+        key('s');key('z');assert '中国' in state()['candidates'],state()
+        query('h');key(0xffaa);key(0xffb0);assert committed()=='不'
         query('h');key(0xffb0);assert committed() and state()['candidates']
         key(0xff0d);assert committed() and not state()['candidates']
         rows=query('szfsz')['candidates'];assert '中国' in rows,rows
         rows=query('htpd');assert '天' in rows['candidates'] and '？' in rows['preedit'],rows
         clear(session);key('?',1);assert committed()=='？'
-        return {'result':'PASS','provided_mobile_profile':profile['profile_id'],'ji_rank_for_12125':4,'strokes':True,'simplified':True,'phrase_prefix':True,'wildcard':True,'local_predictions':True,'ordinary_first_candidate_with_carry':True,'keypad_zero':True,'keypad_dot_selection':True,'keypad_paging':True,'enter_closes':True,'question_punctuation':True}
+        return {'result':'PASS','provided_mobile_profile':profile['profile_id'],'ji_rank_for_12125':4,'strokes':True,'simplified':True,'phrase_prefix':True,'wildcard':True,'local_predictions':True,'ordinary_first_candidate_with_carry':True,'keypad_zero':True,'keypad_dot_separator':True,'curved_separator_mark':True,'spare_digit_selection':True,'keypad_candidate_navigation':True,'keypad_paging':True,'enter_closes':True,'question_punctuation':True}
     finally:
         if session:destroy(session)
         finalize()

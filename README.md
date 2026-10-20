@@ -2,11 +2,11 @@
 
 面向 Windows 的纯笔画输入法，基于 Rime 和 Weasel，支持键盘输入与常驻鼠标面板。
 
-[下载 0.6.29 测试版](https://github.com/chanyuenpang/bihua-input/releases/tag/v0.6.29) · [使用说明](使用说明.md) · [构建说明](packaging/BUILD.md) · [第三方来源](THIRD-PARTY.md)
+[下载 0.6.30 测试版](https://github.com/chanyuenpang/bihua-input/releases/tag/v0.6.30) · [使用说明](使用说明.md) · [构建说明](packaging/BUILD.md) · [第三方来源](THIRD-PARTY.md)
 
 ## 安装
 
-在 Releases 下载 `BihuaInput-0.6.29-setup.exe` 并安装，按 Win＋空格切换到「笔画输入法」。安装包内置运行库和设置面板，无需安装 Codex、小狼毫或 Python。
+在 Releases 下载 `BihuaInput-0.6.30-setup.exe` 并安装，按 Win＋空格切换到「笔画输入法」。安装包内置运行库和设置面板，无需安装 Codex、小狼毫或 Python。
 
 当前为 Windows x64 测试包，包含供 32/64 位应用使用的输入法前端。已有版本可直接升级，个人词库、个人笔顺、学习记录和设置独立保留。
 
@@ -69,7 +69,7 @@ Release 中的 `source.zip` 保存对应安装包的确切构建源，main 分�
 
 ## 验证范围
 
-0.6.29 已验证固定数据一致性、空白用户目录中的真实 Rime 查询、`12125` 前 45 个候选、分词、通配、本地联想、原生界面和当前电脑升级。干净 Windows 首装、系统重启和跨应用物理键盘完整验收仍待补齐。GitHub CI 的源码检查不替代 Windows 桌面端验收。
+0.6.30 已验证固定数据一致性、空白用户目录中的真实 Rime 查询、`12125` 前 45 个候选、分词、通配、本地联想、原生界面和当前电脑升级。干净 Windows 首装、系统重启和跨应用物理键盘完整验收仍待补齐。GitHub CI 的源码检查不替代 Windows 桌面端验收。
 
 ## 许可
 

@@ -10,7 +10,7 @@ import threading
 import struct
 import zlib
 
-from key_bindings import ACTIONS, LETTER, KEYPAD
+from key_bindings import ACTIONS, LETTER, KEYPAD, physical_vk
 import appearance
 import stroke_icons
 
@@ -104,7 +104,7 @@ def fit_scale(dpi,rect):
     return max(.55,min(dpi/96,(rect.right-rect.left-60)/980,(rect.bottom-rect.top-80)/620))
 
 def key_label(value):
-    return {'KP_Divide':'小键盘 /','KP_Multiply':'小键盘 *'}.get(value,'小键盘 '+value[3:] if value.startswith('KP_') else value.upper())
+    return {'KP_Divide':'小键盘 /','KP_Multiply':'小键盘 *','KP_Decimal':'小键盘 .'}.get(value,'小键盘 '+value[3:] if value.startswith('KP_') else value.upper())
 
 def show_native_window(handle):
     # The launcher hides its console with STARTUPINFO. Windows uses that show
@@ -121,7 +121,7 @@ class Window:
         self.brushes={name:g.CreateSolidBrush(color) for name,color in COLORS.items()}
         self.instance=k.GetModuleHandleW(None)
         self.proc=PROC(self.wndproc)
-        wc=WNDCLASS(0,self.proc,0,0,self.instance,None,u.LoadCursorW(None,c.c_void_p(32512)),self.brushes['background'],None,'BihuaNativeSettingsV16')
+        wc=WNDCLASS(0,self.proc,0,0,self.instance,None,u.LoadCursorW(None,c.c_void_p(32512)),self.brushes['background'],None,'BihuaNativeSettingsV17')
         if not u.RegisterClassW(c.byref(wc)) and c.get_last_error()!=1410: raise c.WinError(c.get_last_error())
         self.hwnd=u.CreateWindowExW(0,wc.name,'笔画设置',0x00ca0000,100,40,int(980*self.scale),int(620*self.scale),None,None,self.instance,None)
         if not self.hwnd: raise c.WinError(c.get_last_error())
@@ -177,7 +177,7 @@ class Window:
         self.cancel_capture()
         self.capture_name=name
         u.SetWindowTextW(self.controls[name],'请按键…   Esc 取消')
-        u.SetWindowTextW(self.status,'请按一个'+('字母键 A–Z' if name.startswith('letter_') else '小键盘 1–9、/ 或 *'))
+        u.SetWindowTextW(self.status,'请按一个'+('字母键 A–Z' if name.startswith('letter_') else '小键盘 1–9、.、/ 或 *'))
         self.hook_callback=HOOK(self.keyboard_hook)
         self.hook=u.SetWindowsHookExW(13,self.hook_callback,self.instance,0)
         if not self.hook:
@@ -193,7 +193,8 @@ class Window:
 
     def keyboard_hook(self,code,wp,lp):
         if code>=0 and self.capture_name and wp in (0x100,0x104):
-            vk=c.cast(lp,c.POINTER(KEYINFO)).contents.vk
+            key=c.cast(lp,c.POINTER(KEYINFO)).contents
+            vk=physical_vk(key.vk,key.scan,bool(key.flags&1))
             if self.handle_capture_key(vk,u.GetForegroundWindow()==self.hwnd): return 1
         return u.CallNextHookEx(self.hook,code,wp,lp)
 
@@ -211,9 +212,9 @@ class Window:
         device=name.split('_')[0]
         value=chr(vk).lower() if device=='letter' and 0x41<=vk<=0x5a else (
               'KP_'+str(vk-0x60) if device=='keypad' and 0x61<=vk<=0x69 else
-              {0x6f:'KP_Divide',0x6a:'KP_Multiply'}.get(vk) if device=='keypad' else None)
+              {0x6f:'KP_Divide',0x6a:'KP_Multiply',0x6e:'KP_Decimal'}.get(vk) if device=='keypad' else None)
         if not value:
-            u.SetWindowTextW(self.status,'请按'+('字母 A–Z' if device=='letter' else '小键盘 1–9、/ 或 *')+'；Esc 取消')
+            u.SetWindowTextW(self.status,'请按'+('字母 A–Z' if device=='letter' else '小键盘 1–9、.、/ 或 *')+'；Esc 取消')
             return
         if any(k!=name and k.startswith(device+'_') and v==value for k,v in self.key_values.items()):
             u.SetWindowTextW(self.status,key_label(value)+' 已被占用，请按其他键；Esc 取消')
@@ -359,7 +360,7 @@ class Window:
                 name=device+'_'+action
                 self.key_values[name]=''
                 self.button('',x,y,236,lambda n=name:self.arm_capture(n),'keys',name)
-        self.label('空闲数字键依次选字；按住小键盘 . 可用 1–9 选字。',246,510,650,page='keys')
+        self.label('小键盘 . 分词；/、* 左右选字；空闲数字键依次直选。',246,510,650,page='keys')
         self.label('候选与翻页',246,32,height=38,page='paging')
         self.checkbox('arrow_navigation','方向键选字 · ↓ 展开五行，首行 ↑ 收起',100,'paging',246,650)
         self.label('左右移动；空格 / 小键盘 0 确认。',246,142,650,page='paging')
@@ -682,6 +683,9 @@ class Window:
                 assert self.capture_name=='keypad_h'
                 self.capture_vk(0x61)
                 assert self.value('keypad_h')=='KP_1' and not self.hook
+                self.arm_capture('keypad_separator');self.capture_vk(physical_vk(0x2e,0x53,False))
+                assert self.value('keypad_separator')=='KP_Decimal' and not self.hook
+                assert physical_vk(0x2e,0x53,True)==0x2e
                 self.arm_capture('letter_h');self.capture_vk(0x1b)
                 assert not self.hook and self.value('letter_h')=='q'
                 self.arm_capture('letter_h');self.wndproc(hwnd,0x6,0,0)
@@ -791,7 +795,7 @@ def main():
     parser.add_argument('--smoke',type=Path)
     parser.add_argument('--page',choices=[page for page,_ in PAGES],default='keys')
     args=parser.parse_args()
-    previous=u.FindWindowW('BihuaNativeSettingsV16',None)
+    previous=u.FindWindowW('BihuaNativeSettingsV17',None)
     if previous and not args.smoke:
         u.SendMessageW(previous,0x8002,[page for page,_ in PAGES].index(args.page),0);return
     Window(panel.Settings(args.rime_dir),args.smoke,args.page).run()

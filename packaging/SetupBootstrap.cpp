@@ -31,12 +31,12 @@ static DWORD execute(const fs::path& exe,const std::wstring& parameters) {
 static fs::path own_directory() {wchar_t path[32768]{};GetModuleFileNameW(nullptr,path,32768);return fs::path(path).parent_path();}
 static fs::path destination() {
   PWSTR local{};if(FAILED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&local)))throw std::runtime_error("Cannot find LocalAppData");
-  fs::path result=fs::path(local)/L"BihuaWeasel"/L"0.6.29";CoTaskMemFree(local);return result;
+  fs::path result=fs::path(local)/L"BihuaWeasel"/L"0.6.30";CoTaskMemFree(local);return result;
 }
 static fs::path powershell() {wchar_t system[32768]{};GetSystemDirectoryW(system,32768);return fs::path(system)/L"WindowsPowerShell/v1.0/powershell.exe";}
 static void cleanup_after_exit(const fs::path& app) {
   if(fs::weakly_canonical(app)!=fs::weakly_canonical(destination()))return;
-  const auto script=L"$bihuaTarget=[IO.Path]::GetFullPath("+psquote(app.wstring())+L");$bihuaExpected=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'BihuaWeasel/0.6.29';if($bihuaTarget -ne [IO.Path]::GetFullPath($bihuaExpected)){exit};Wait-Process -Id "+std::to_wstring(GetCurrentProcessId())+L" -ErrorAction SilentlyContinue;$r=Get-Content -LiteralPath (Join-Path $bihuaTarget 'user-install.json') -Raw|ConvertFrom-Json;if($r.status -ne 'uninstalled'){exit};for($i=0;$i -lt 8;$i++){try{Remove-Item -LiteralPath $bihuaTarget -Recurse -Force -ErrorAction Stop;break}catch{Start-Sleep -Seconds 2}}";
+  const auto script=L"$bihuaTarget=[IO.Path]::GetFullPath("+psquote(app.wstring())+L");$bihuaExpected=Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'BihuaWeasel/0.6.30';if($bihuaTarget -ne [IO.Path]::GetFullPath($bihuaExpected)){exit};Wait-Process -Id "+std::to_wstring(GetCurrentProcessId())+L" -ErrorAction SilentlyContinue;$r=Get-Content -LiteralPath (Join-Path $bihuaTarget 'user-install.json') -Raw|ConvertFrom-Json;if($r.status -ne 'uninstalled'){exit};for($i=0;$i -lt 8;$i++){try{Remove-Item -LiteralPath $bihuaTarget -Recurse -Force -ErrorAction Stop;break}catch{Start-Sleep -Seconds 2}}";
   std::wstring cmd=quote(powershell().wstring())+L" -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "+quote(script);
   STARTUPINFOW start{sizeof(start)};start.dwFlags=STARTF_USESHOWWINDOW;start.wShowWindow=SW_HIDE;PROCESS_INFORMATION process{};
   if(CreateProcessW(powershell().c_str(),cmd.data(),nullptr,nullptr,FALSE,CREATE_NO_WINDOW,nullptr,nullptr,&start,&process)){CloseHandle(process.hThread);CloseHandle(process.hProcess);}
@@ -93,7 +93,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,PWSTR,int) {
     if(argc==3&&!wcscmp(argv[1],L"/extract-only")){extract(fs::path(argv[2]));return 0;}
     WNDCLASSW cls{};cls.lpfnWndProc=procedure;cls.hInstance=instance;cls.hCursor=LoadCursor(nullptr,IDC_ARROW);cls.hbrBackground=reinterpret_cast<HBRUSH>(COLOR_WINDOW+1);cls.lpszClassName=L"BihuaInstaller";RegisterClassW(&cls);
     const double scale=GetDpiForSystem()/96.0;
-    window=CreateWindowW(cls.lpszClassName,L"安装笔画输入法 0.6.29 测试版",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,100,100,static_cast<int>(610*scale),static_cast<int>(350*scale),nullptr,nullptr,instance,nullptr);
+    window=CreateWindowW(cls.lpszClassName,L"安装笔画输入法 0.6.30 测试版",WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,100,100,static_cast<int>(610*scale),static_cast<int>(350*scale),nullptr,nullptr,instance,nullptr);
     HFONT font=CreateFontW(-static_cast<int>(17*scale),0,0,0,400,0,0,0,DEFAULT_CHARSET,0,0,ANTIALIASED_QUALITY,0,L"Microsoft YaHei UI");
     auto child=[&](LPCWSTR type,LPCWSTR text,int x,int y,int width,int height,int id,DWORD style){auto h=CreateWindowW(type,text,WS_CHILD|WS_VISIBLE|style,static_cast<int>(x*scale),static_cast<int>(y*scale),static_cast<int>(width*scale),static_cast<int>(height*scale),window,reinterpret_cast<HMENU>(static_cast<INT_PTR>(id)),instance,nullptr);SendMessageW(h,WM_SETFONT,reinterpret_cast<WPARAM>(font),TRUE);return h;};
     child(L"STATIC",L"笔画输入法",30,24,540,30,1,0);

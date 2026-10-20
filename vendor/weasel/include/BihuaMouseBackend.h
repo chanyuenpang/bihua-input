@@ -103,6 +103,16 @@ void RimeWithWeaselHandler::_UpdateMouse(DWORD session) {
   m_mouse_panel->SetModeAvailable(mode_session!=0);
   m_mouse_panel->SetKeyboardMode(profile==m_mouse_profiles.end()?-1:profile->second.mode);
 }
+bool RimeWithWeaselHandler::_KeypadNavigate(const weasel::KeyEvent& key,DWORD session,EatLine eat){
+  bool previous=key.keycode==ibus::KP_Divide&&m_keypad_previous;
+  bool next=key.keycode==ibus::KP_Multiply&&m_keypad_next;
+  if((!previous&&!next)||(key.mask&~(ibus::RELEASE_MASK|ibus::LOCK_MASK)))return false;
+  std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);
+  if(!m_mouse_arrows||!_MouseTargetValid()||m_mouse_ascii||session!=m_mouse_state.session||!m_mouse_view.count)return false;
+  if(!(key.mask&ibus::RELEASE_MASK))MouseCommand(WEASEL_IPC_MOUSE_VIEW,previous?1:2,session,eat);
+  _Respond(session,eat);
+  return true;
+}
 void RimeWithWeaselHandler::_UpdateNumLock(){
   auto session=_MouseProfileSession();auto profile=m_mouse_profiles.find(session);
   HWND front=GetForegroundWindow();DWORD pid=0;auto thread=GetWindowThreadProcessId(front,&pid);

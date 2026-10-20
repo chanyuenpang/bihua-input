@@ -215,6 +215,8 @@ void RimeWithWeaselHandler::Initialize() {
         rime_api->config_close(&key_config);
       }
       m_mouse_panel->ConfigurePersonalKeys(keys);
+      m_keypad_previous=std::find(keys.keypad.begin(),keys.keypad.end(),VK_DIVIDE)==keys.keypad.end();
+      m_keypad_next=std::find(keys.keypad.begin(),keys.keypad.end(),VK_MULTIPLY)==keys.keypad.end();
     }
     _LoadAppOptions(&config, m_app_options);
     rime_api->config_close(&config);
@@ -356,6 +358,7 @@ BOOL RimeWithWeaselHandler::ProcessKeyEvent(KeyEvent keyEvent,
   if (m_disabled)
     return FALSE;
   RimeSessionId session_id = to_session_id(ipc_id);
+  if(_KeypadNavigate(keyEvent,ipc_id,eat))return TRUE;
   _BeforeMouseMutation(ipc_id);
   Bool handled = rime_api->process_key(session_id, keyEvent.keycode,
                                        expand_ibus_modifier(keyEvent.mask));

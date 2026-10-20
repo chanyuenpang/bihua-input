@@ -195,6 +195,8 @@ class Settings:
         for device, presets in [('letter', LETTER), ('keypad', KEYPAD)]:
             settings[device+'_style'] = str(value('bihua_keys/'+device+'_style', 'standard'))
             settings[device+'_keys'] = value('bihua_keys/'+device, presets['standard'].copy())
+        from key_bindings import migrate_keypad
+        settings['keypad_style'],settings['keypad_keys']=migrate_keypad(settings['keypad_style'],settings['keypad_keys'])
         rows = manager.phrase_rows(self.directory / 'bihua_personal_phrases.tsv')
         words = [{'text': text, 'digits': '|'.join(codes).translate(str.maketrans('hspnz', '12345'))} for text, (codes, _) in sorted(rows.items())]
         return {'settings': settings, 'version': str(get(compiled, 'schema/version', '未部署')),

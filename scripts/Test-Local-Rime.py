@@ -212,7 +212,7 @@ end, func=matcher.func, fini=matcher.fini}
             clear(session)
             for char in code:
                 started = time.perf_counter()
-                key({'|': 0xFFB7, '?': 0xFFB6}.get(char, char) if args.phrase_query else char)
+                key({'|': 0xFFAE, '?': 0xFFB6}.get(char, char) if args.phrase_query else char)
                 key_timings.append((time.perf_counter() - started) * 1000)
             return snapshot()
 
@@ -231,7 +231,7 @@ end, func=matcher.func, fini=matcher.fini}
                 free_commit(c.byref(out))
 
         if args.key_style:
-            names={'KP_Divide':0xffaf,'KP_Multiply':0xffaa}
+            names={'KP_Divide':0xffaf,'KP_Multiply':0xffaa,'KP_Decimal':0xffae}
             def physical(name):
                 return names.get(name, 0xffb0+int(name[-1]) if name.startswith('KP_') and name[-1].isdigit() else ord(name) if len(name)==1 else 0)
             def typed(actions, mapping):
@@ -593,7 +593,7 @@ end, func=matcher.func, fini=matcher.fini}
             clear(session)
             for letter in 'szfszh':
                 key(letter)
-            assert '中国' in snapshot()['candidates'] and '｜' in snapshot()['preedit'], snapshot()
+            assert '中国' in snapshot()['candidates'] and '‘' in snapshot()['preedit'], snapshot()
             clear(session)
             for letter in 'htpn':
                 key(letter)
@@ -615,7 +615,7 @@ end, func=matcher.func, fini=matcher.fini}
                 checked_words += 1
             clear(session)
             key(0xFFB6)
-            key(0xFFB7)
+            key(0xFFAE)
             assert not snapshot()['preedit'] and not snapshot()['candidates']
             direct = query('sz|szh')['candidates']
             assert '中国' in direct, direct
@@ -646,7 +646,7 @@ end, func=matcher.func, fini=matcher.fini}
             assert snapshot()['preedit'] == before_wildcard_limit, 'Third wildcard was accepted'
             query('sz|')
             before = snapshot()['preedit']
-            key(0xFFB7)
+            key(0xFFAE)
             assert snapshot()['preedit'] == before, 'Double boundary was accepted'
             key(0xFF08)
             assert '|' not in snapshot()['preedit'], 'Backspace did not remove boundary'

@@ -125,6 +125,8 @@ edit('include/RimeWithWeasel.h',[
   void _MouseDisplayed(DWORD generation,uint64_t revision,int first,int count);
   void _BeforeMouseMutation(DWORD session);
   void _UpdateNumLock();
+  bool _KeypadNavigate(const weasel::KeyEvent& key,DWORD session,EatLine eat);
+  bool m_keypad_previous=true,m_keypad_next=true;
   BihuaNumLockGuard m_numlock;
   void _UpdateMouse(DWORD session);
   bool _MouseHeartbeat();
@@ -185,6 +187,8 @@ edit('RimeWithWeasel/RimeWithWeasel.cpp',[
         rime_api->config_close(&key_config);
       }
       m_mouse_panel->ConfigurePersonalKeys(keys);
+      m_keypad_previous=std::find(keys.keypad.begin(),keys.keypad.end(),VK_DIVIDE)==keys.keypad.end();
+      m_keypad_next=std::find(keys.keypad.begin(),keys.keypad.end(),VK_MULTIPLY)==keys.keypad.end();
     }
     _LoadAppOptions(&config, m_app_options);'''),
 ('  m_last_schema_id.clear();\n}', '  m_last_schema_id.clear();\n  _UpdateMouse(0);\n}'),
@@ -225,7 +229,7 @@ shutil.copy2(ROOT/'native/BihuaMouseBackend.h',SRC/'include/BihuaMouseBackend.h'
 path=SRC/'RimeWithWeasel/RimeWithWeasel.cpp'
 text=path.read_text(encoding='utf-8-sig')
 for old,new in [
- ('  Bool handled = rime_api->process_key(session_id, keyEvent.keycode,','  _BeforeMouseMutation(ipc_id);\n  Bool handled = rime_api->process_key(session_id, keyEvent.keycode,'),
+ ('  Bool handled = rime_api->process_key(session_id, keyEvent.keycode,','  if(_KeypadNavigate(keyEvent,ipc_id,eat))return TRUE;\n  _BeforeMouseMutation(ipc_id);\n  Bool handled = rime_api->process_key(session_id, keyEvent.keycode,'),
  ('  rime_api->commit_composition(to_session_id(ipc_id));','  _BeforeMouseMutation(ipc_id);\n  rime_api->commit_composition(to_session_id(ipc_id));'),
  ('  rime_api->clear_composition(to_session_id(ipc_id));','  _BeforeMouseMutation(ipc_id);\n  rime_api->clear_composition(to_session_id(ipc_id));'),
  ('  rime_api->select_candidate_on_current_page(to_session_id(ipc_id), index);','  _BeforeMouseMutation(ipc_id);\n  rime_api->select_candidate_on_current_page(to_session_id(ipc_id), index);'),

@@ -79,6 +79,8 @@ class RimeWithWeaselHandler : public weasel::RequestHandler {
   void _MouseDisplayed(DWORD generation,uint64_t revision,int first,int count);
   void _BeforeMouseMutation(DWORD session);
   void _UpdateNumLock();
+  bool _KeypadNavigate(const weasel::KeyEvent& key,DWORD session,EatLine eat);
+  bool m_keypad_previous=true,m_keypad_next=true;
   BihuaNumLockGuard m_numlock;
   void _UpdateMouse(DWORD session);
   bool _MouseHeartbeat();

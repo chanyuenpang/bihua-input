@@ -21,6 +21,7 @@ def run(args):
             schema['bihua_matcher'].update(personal_association=True,static_association=True)
             keys=KEYPAD['standard' if args.style=='standard' else '789456'].copy()
             if args.style=='custom':keys=dict(zip(ACTIONS,['KP_9','KP_8','KP_7','KP_6','KP_5','KP_Divide','KP_Multiply']))
+            if args.style=='legacy':keys['separator']='KP_Divide'
             schema['bihua_keys']['keypad']=keys
             schema['bihua_keys']['keypad_style']='custom'
             schema['menu']['page_size']=args.page_size
@@ -52,7 +53,7 @@ def run(args):
         latencies.append((time.perf_counter()-started)*1000);return handled
     def page():
         value=abi.initialized(abi.Context);assert context(session,c.byref(value))
-        try:return {'page':value.menu.page_no,'last':bool(value.menu.is_last_page),'preedit':abi.text(value.composition.preedit),'candidates':[abi.text(value.menu.candidates[i].text) for i in range(value.menu.num_candidates)]}
+        try:return {'page':value.menu.page_no,'highlight':value.menu.highlighted_candidate_index,'last':bool(value.menu.is_last_page),'preedit':abi.text(value.composition.preedit),'candidates':[abi.text(value.menu.candidates[i].text) for i in range(value.menu.num_candidates)]}
         finally:free(c.byref(value))
     def commit():
         value=abi.initialized(abi.Commit)
@@ -86,19 +87,35 @@ def run(args):
                     prediction=page()['candidates']
                     if index<len(prediction):
                         press(0xffb0+digit);assert commit()==prediction[index]
-            def physical(name):return {'KP_Divide':0xffaf,'KP_Multiply':0xffaa}.get(name,0xffb0+int(name[-1]) if name[-1].isdigit() else 0)
+            def physical(name):return {'KP_Divide':0xffaf,'KP_Multiply':0xffaa,'KP_Decimal':0xffae}.get(name,0xffb0+int(name[-1]) if name[-1].isdigit() else 0)
+            clear(session);commit()
+            for action in ('s','z','separator','s','z'):press(physical(keys[action]))
+            assert '‘' in page()['preedit'],page()
+            while '中国' not in page()['candidates'] and not page()['last']:press(0xffab)
+            assert '中国' in page()['candidates'],page()
+            if keys['separator']=='KP_Decimal':
+                press(0xffae,1<<30)
+                before=page();press(0xffb0+spare[0])
+                assert commit()==before['candidates'][0],'bound decimal must not arm dot-held selection'
+            if 'KP_Divide' not in occupied and 'KP_Multiply' not in occupied:
+                before=query('h');press(0xffaa)
+                assert page()['highlight']==1 and not commit(),page()
+                press(0xffaf);assert page()['highlight']==0 and not commit()
+                press(0xffaa);press(0xffb0);assert commit()==before['candidates'][1]
             clear(session);commit()
             for action in ('h','h','p','n'):press(physical(keys[action]))
             assert page()['preedit']=='一一丿丶',page()
             assert page()['candidates'][0]=='天'
             press(0xffb0);assert commit()=='天'
-            query('h');press(0xffab);before=page()
-            press(0xffae);press(0xffb2);assert commit()==before['candidates'][1]
-            press(0xffae,1<<30)
+            if 'KP_Decimal' not in occupied:
+                query('h');press(0xffab);before=page()
+                press(0xffae);press(0xffb2);assert commit()==before['candidates'][1]
+                press(0xffae,1<<30)
             before=query('h')
             for mask in (1,4,8,1<<30):
                 press(0xffb0+spare[0],mask);assert not commit() and page()==before,(mask,page())
-            press(0xffae);setprop(session,b'bihua_keymap_reset',b'focus_out')
+            if 'KP_Decimal' not in occupied:press(0xffae)
+            setprop(session,b'bihua_keymap_reset',b'focus_out')
             press(physical(keys['h']));assert page()['preedit']=='一一' and not commit()
             press(0xffae,1<<30)
             # Missing slots, including a smaller configured page, are inert.
@@ -153,6 +170,6 @@ def run(args):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--runtime',type=Path,required=True)
-    parser.add_argument('--mode',choices=['keys','learning'],default='keys');parser.add_argument('--style',choices=['standard','789456','custom'],default='789456')
+    parser.add_argument('--mode',choices=['keys','learning'],default='keys');parser.add_argument('--style',choices=['standard','789456','custom','legacy'],default='789456')
     parser.add_argument('--page-size',type=int,default=9);parser.add_argument('--baseline',action='store_true');parser.add_argument('--reuse',action='store_true');parser.add_argument('--user',type=Path)
     args=parser.parse_args();run(args)

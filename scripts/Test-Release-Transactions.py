@@ -16,7 +16,7 @@ spec=importlib.util.spec_from_file_location('installer',ROOT/'packaging/Install-
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 
 def scenario(base,preserve=False,fail=False,empty=False,no_task=False,fail_shortcut=False,legacy_role='local_research'):
-    home=base/'local/BihuaWeasel';app=home/'0.6.29';user=base/'roaming/Rime'
+    home=base/'local/BihuaWeasel';app=home/'0.6.30';user=base/'roaming/Rime'
     app.mkdir(parents=True);user.mkdir(parents=True)
     (app/'scripts').mkdir()
     for name in ['Settings-Panel.py','Manage-Personal.py','personal_data.py','personal_strokes.py','key_bindings.py','appearance.py']:
