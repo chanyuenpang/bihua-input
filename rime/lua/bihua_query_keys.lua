@@ -6,11 +6,18 @@ local defaults = {letter={h='h',s='s',p='p',n='d',z='z',wildcard='t',separator='
 local targets = {h='h',s='s',p='p',n='n',z='z',wildcard='KP_6',separator='KP_7'}
 function M.init(env)
   env.bindings = {}
+  env.physical_digits = {}
   local config=env.engine.schema.config
   for device,rows in pairs(defaults) do
     for action,fallback in pairs(rows) do
       local name=config:get_string('bihua_keys/'..device..'/'..action) or fallback
-      env.bindings[KeyEvent(name).keycode]=targets[action]
+      local scan,extended,vk=name:match('^win%-v1:(%x%x):([01]):(%x%x)$')
+      if scan then
+        scan=tonumber(scan,16);vk=tonumber(vk,16)
+        local digit=extended=='0' and ({[0x4f]=1,[0x50]=2,[0x51]=3,[0x4b]=4,[0x4c]=5,[0x4d]=6,[0x47]=7,[0x48]=8,[0x49]=9})[scan]
+        if scan==0 and extended=='0' and vk>=0x61 and vk<=0x69 then digit=vk-0x60 end
+        if digit then env.physical_digits[0xffb0+digit]=true end
+      elseif name~='' then env.bindings[KeyEvent(name).keycode]=targets[action] end
     end
   end
   if (config:get_string('bihua_keys/letter_style') or 'standard')=='standard' then
@@ -21,7 +28,7 @@ function M.init(env)
   env.free_digits={}
   local index=0
   for code=0xffb1,0xffb9 do
-    if not env.bindings[code] then index=index+1;env.free_digits[code]=index end
+    if not env.bindings[code] and not env.physical_digits[code] then index=index+1;env.free_digits[code]=index end
   end
 end
 function M.func(key, env)
@@ -92,6 +99,9 @@ function M.func(key,env)
     local ctx=env.engine.context
     local action=ctx:get_property('bihua_mouse_action')
     ctx:set_property('bihua_mouse_action','')
+    if action=='' then return physical_func(key,env) end
+    if action=='symbol_toggle' then require('bihua_symbol_mode').toggle(ctx);return 1 end
+    if action=='symbol_cancel' then require('bihua_symbol_mode').cancel(ctx);return 1 end
     if action=='expose' then
       local first=ctx:get_property('bihua_mouse_expose_first')
       local count=ctx:get_property('bihua_mouse_expose_count')
@@ -100,7 +110,7 @@ function M.func(key,env)
       require('bihua_association_runtime').expose(ctx,first,count)
       return 1
     end
-    local canonical={h='h',s='s',p='p',n='n',z='z',wildcard='KP_6'}
+    local canonical={h='h',s='s',p='p',n='n',z='z',wildcard='KP_6',separator='KP_7'}
     if canonical[action] and not ctx:get_option('ascii_mode') then
       env.forwarding=true
       local ok,err=pcall(function() env.engine:process_key(KeyEvent(canonical[action])) end)
@@ -109,6 +119,8 @@ function M.func(key,env)
     end
     return 1
   end
+  local symbol_result=require('bihua_symbol_mode').key(key,env.engine.context)
+  if symbol_result~=nil then return symbol_result end
   if not env.forwarding then return physical_func(key,env) end
   if key:release() or key:ctrl() or key:alt() or key:shift() then return 2 end
   local code, ctx = key.keycode, env.engine.context

@@ -1,4 +1,5 @@
-﻿#include "stdafx.h"
+﻿// Bihua physical event v1
+#include "stdafx.h"
 #include "WeaselIPC.h"
 #include "WeaselTSF.h"
 #include <KeyEvent.h>
@@ -24,9 +25,13 @@ void WeaselTSF::_ProcessKeyEvent(WPARAM wParam, LPARAM lParam, BOOL* pfEaten) {
   _RefreshMouseFocus();
   weasel::KeyEvent ke;
   GetKeyboardState(_lpbKeyState);
-  if (!ConvertKeyEvent(static_cast<UINT>(wParam), lParam, _lpbKeyState, ke)) {
-    /* Unknown key event */
-    *pfEaten = FALSE;
+  KeyInfo physical_info(lParam);
+  UINT normalized=BihuaPhysicalKey::Normalize(static_cast<UINT>(wParam),physical_info.scanCode,physical_info.isExtended);
+  bool converted=ConvertKeyEvent(normalized,lParam,_lpbKeyState,ke);
+  if((GetKeyState(VK_LWIN)&0x8000)||(GetKeyState(VK_RWIN)&0x8000))ke.mask|=ibus::SUPER_MASK;
+  if (!converted) {
+    // Unknown VKs retain their physical identity even without a Rime name.
+    *pfEaten = m_client.ProcessPhysicalKeyEvent(static_cast<UINT>(wParam),lParam,ke);
   } else {
     // cheet key code when vertical auto reverse happened, swap up and down
     if (_cand->GetIsReposition()) {
@@ -36,7 +41,7 @@ void WeaselTSF::_ProcessKeyEvent(WPARAM wParam, LPARAM lParam, BOOL* pfEaten) {
         ke.keycode = ibus::Up;
     }
     if (!keyCountToSimulate)
-      *pfEaten = (BOOL)m_client.ProcessKeyEvent(ke);
+      *pfEaten = (BOOL)m_client.ProcessPhysicalKeyEvent(static_cast<UINT>(wParam),lParam,ke);
 
     if (ke.keycode == ibus::Caps_Lock) {
       if (prevKeyEvent.keycode == ibus::Caps_Lock && prevfEaten == TRUE &&

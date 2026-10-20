@@ -1,3 +1,4 @@
+﻿// Bihua physical event v1
 // dllmain.cpp : Defines the entry point for the DLL application.
 #include "stdafx.h"
 #include "Globals.h"
@@ -56,6 +57,8 @@ LONG WINAPI _UnhandledExceptionFilter(EXCEPTION_POINTERS* pExceptionPointers) {
   }
   return EXCEPTION_EXECUTE_HANDLER;
 }
+
+extern "C" UINT __cdecl BihuaGetPhysicalKeyProtocolVersion(){return 1;}
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID pvReserved) {
   switch (dwReason) {

@@ -1,3 +1,4 @@
+﻿// Bihua physical event v1
 #pragma once
 #include <string>
 #include <memory>
@@ -35,6 +36,7 @@ class PipeChannelBase {
   std::wstring pname;
   HANDLE hpipe;
 
+  size_t received_body_bytes=0;
   bool has_body;
   const size_t buff_size;
   std::unique_ptr<char[]> buffer;
@@ -74,6 +76,13 @@ class PipeChannel : public PipeChannelBase {
   bool Connected() const { return !_Invalid(hpipe); }
   void Disconnect() { _FinalizePipe(hpipe); }
 
+  size_t ReceivedBodyBytes()const{return received_body_bytes;}
+  const char* ReceivedPayload()const{return buffer.get();}
+  void WritePayload(const void* data,size_t size){
+    if(!data||size>buff_size-_MsgSize)throw DWORD(ERROR_INVALID_DATA);
+    ClearBufferStream();memset(buffer.get()+_MsgSize,0,buff_size-_MsgSize);
+    memcpy(buffer.get()+_MsgSize,data,size);has_body=true;
+  }
   /* Write data to buffer */
 
   template <typename _TyWrite>

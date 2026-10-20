@@ -114,6 +114,9 @@ void WeaselTSF::_WakeMouseMode(){
 }
 bool WeaselTSF::_RouteMouseKey(WPARAM key,LPARAM info,BOOL* eaten,int phase){
   if(!_mousePanelEnabled||!_mouseOwnActive){_mouseKeyboard.Reset();return false;}
+  const UINT raw_key=static_cast<UINT>(key);
+  KeyInfo physical_info(info);
+  key=BihuaPhysicalKey::Normalize(raw_key,physical_info.scanCode,physical_info.isExtended);
   if(key==VK_RETURN){*eaten=FALSE;return true;}
   _RefreshMouseFocus();
   const bool down=phase<2;
@@ -148,6 +151,7 @@ bool WeaselTSF::_RouteMouseKey(WPARAM key,LPARAM info,BOOL* eaten,int phase){
   }
   bool direction=key>=VK_LEFT&&key<=VK_DOWN;
   bool confirmation=key==VK_SPACE||key==VK_NUMPAD0;
+  if((direction||key==VK_NUMPAD0)&&m_client.IsPhysicalKeyBound(raw_key,info))return false;
   if(down&&!ctrl&&!alt&&!win&&!shifted&&(direction||confirmation)){
     DWORD flags=m_client.MouseView(6);
     if((flags&1)&&((direction&&(flags&2))||(confirmation&&(flags&4)))){

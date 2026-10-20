@@ -4,6 +4,13 @@ inline void BihuaNeutralFocusOut(RimeApi* api, RimeSessionId session) {
   if (!session || !api->find_session(session)) return;
   // Clear held keypad selection even when personal association is disabled.
   api->set_property(session, "bihua_keymap_reset", "focus_out");
+  char symbols[8]{};
+  api->get_property(session,"bihua_symbol_active",symbols,sizeof(symbols));
+  if(symbols[0]=='1'){
+    api->set_property(session,"bihua_mouse_action","symbol_cancel");
+    api->process_key(session,0xffd5,0);
+    api->set_property(session,"bihua_mouse_action","");
+  }
   char owner[256]{};
   api->get_property(session, "bihua_feedback_session", owner, sizeof(owner));
   if (!owner[0]) return;

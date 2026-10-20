@@ -1,4 +1,5 @@
-﻿#include "stdafx.h"
+﻿// Bihua physical event v1
+#include "stdafx.h"
 #include "WeaselServerImpl.h"
 #include <mutex>
 #include <Windows.h>
@@ -391,6 +392,17 @@ DWORD ServerImpl::OnMouseCommand(WEASEL_IPC_COMMAND command,DWORD value,DWORD se
   return m_pRequestHandler->MouseCommand(command,value,session,[this](std::wstring& line){*m_request_channel<<line;return true;});
 }
 
+DWORD ServerImpl::OnPhysicalKey(WEASEL_IPC_COMMAND command,DWORD size,DWORD session){
+  auto owner=m_session_owners.find(session);
+  if(!m_pRequestHandler||!m_request_pid||owner==m_session_owners.end()||owner->second!=m_request_pid)return 0;
+  if(command==WEASEL_IPC_PHYSICAL_CAPABILITY)return 1;
+  if(size!=sizeof(BihuaPhysicalEventV1)||m_request_channel->ReceivedBodyBytes()<sizeof(BihuaPhysicalEventV1)){
+    OutputDebugStringW(L"Bihua physical event rejected: truncated ABI.\n");return 0;
+  }
+  BihuaPhysicalEventV1 event;memcpy(&event,m_request_channel->ReceivedPayload(),sizeof(event));
+  if(!event.Valid()){OutputDebugStringW(L"Bihua physical event rejected: invalid ABI.\n");return 0;}
+  return m_pRequestHandler->PhysicalKeyEvent(event,session,[this](std::wstring& line){*m_request_channel<<line;return true;},command==WEASEL_IPC_PHYSICAL_QUERY);
+}
 #define MAP_PIPE_MSG_HANDLE(__msg, __wParam, __lParam) \
   {                                                    \
     auto lParam = __lParam;                            \
@@ -421,6 +433,9 @@ void ServerImpl::HandlePipeMessage(PipeMessage pipe_msg, _Resp resp) {
   PIPE_MSG_HANDLE(WEASEL_IPC_MOUSE_KEYBOARD_MODE, OnMouseCommand)
   PIPE_MSG_HANDLE(WEASEL_IPC_MOUSE_MODE_TAKE, OnMouseCommand)
   PIPE_MSG_HANDLE(WEASEL_IPC_MOUSE_SELECTION, OnMouseCommand)
+  PIPE_MSG_HANDLE(WEASEL_IPC_PHYSICAL_CAPABILITY, OnPhysicalKey)
+  PIPE_MSG_HANDLE(WEASEL_IPC_PHYSICAL_KEY, OnPhysicalKey)
+  PIPE_MSG_HANDLE(WEASEL_IPC_PHYSICAL_QUERY, OnPhysicalKey)
   PIPE_MSG_HANDLE(WEASEL_IPC_ECHO, OnEcho)
   PIPE_MSG_HANDLE(WEASEL_IPC_START_SESSION, OnStartSession)
   PIPE_MSG_HANDLE(WEASEL_IPC_END_SESSION, OnEndSession)

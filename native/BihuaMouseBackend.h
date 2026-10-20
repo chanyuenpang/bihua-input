@@ -26,15 +26,21 @@ DWORD RimeWithWeaselHandler::_MouseProfileSession() {
   return last!=m_mouse_profiles.end()&&last->second.active&&window!=m_mouse_targets.end()&&IsWindow(window->second)?m_mouse_mode_session:0;
 }
 bool RimeWithWeaselHandler::_MouseProfileVisible(){return _MouseProfileSession()!=0;}
-bool RimeWithWeaselHandler::_MouseTargetValid() {
-  if(!m_mouse_enabled||m_disabled||!m_mouse_state.session)return false;
+bool RimeWithWeaselHandler::_KeyboardTargetValid() {
+  if(m_disabled||!m_mouse_state.session)return false;
   auto target=m_mouse_targets.find(m_mouse_state.session);
   if(target==m_mouse_targets.end()||!IsWindow(target->second))return false;
   DWORD pid=0,front=0;
   GetWindowThreadProcessId(target->second,&pid);
   GetWindowThreadProcessId(GetForegroundWindow(),&front);
-  return pid&&pid==front;
+  auto profile=m_mouse_profiles.find(m_mouse_state.session);
+  GUITHREADINFO info{sizeof(info)};auto thread=GetWindowThreadProcessId(GetForegroundWindow(),nullptr);
+  return pid&&pid==front&&profile!=m_mouse_profiles.end()&&profile->second.active&&
+      GetGUIThreadInfo(thread,&info)&&info.hwndFocus&&
+      GetWindowThreadProcessId(info.hwndFocus,nullptr)==profile->second.thread&&
+      BihuaPersonalKeyCapture::SafeForeground(GetForegroundWindow());
 }
+bool RimeWithWeaselHandler::_MouseTargetValid(){return m_mouse_enabled&&_KeyboardTargetValid();}
 bool RimeWithWeaselHandler::_MouseHeartbeat() {
   std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);
   if(!m_mouse_panel)return false;
@@ -123,7 +129,31 @@ void RimeWithWeaselHandler::_UpdateNumLock(){
   DWORD focus_pid=0;auto focus_thread=info.hwndFocus?GetWindowThreadProcessId(info.hwndFocus,&focus_pid):0;
   valid=valid&&focus_pid==pid&&focus_thread==profile->second.thread;
   valid=valid&&BihuaPersonalKeyCapture::SafeForeground(front);
-  m_numlock.Publish(valid?front:nullptr,valid?info.hwndFocus:nullptr);
+  m_numlock.Publish(valid?front:nullptr,valid?info.hwndFocus:nullptr,m_mouse_state.generation);
+}
+bool RimeWithWeaselHandler::_QueueKeyboardAction(int action,uint32_t generation){
+  std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);
+  if(!_KeyboardTargetValid()||m_mouse_ascii||(generation&&generation!=m_mouse_state.generation))return false;
+  auto profile=m_mouse_profiles.find(m_mouse_state.session);
+  if(action!=BihuaMouseState::SymbolCancel&&
+     (profile==m_mouse_profiles.end()||profile->second.mode>0||m_mouse_panel&&m_mouse_panel->PersonalDraft()))return false;
+  auto token=m_mouse_state.Queue(action,GetTickCount64(),m_mouse_state.generation,m_mouse_state.projection);
+  if(!token)return false;
+  m_mouse_pending_view=0;
+  auto target=m_mouse_targets.find(m_mouse_state.session);
+  if(target==m_mouse_targets.end()||!PostMessageW(target->second,RegisterWindowMessageW(L"Bihua.MouseAction.V1"),0,0)){
+    m_mouse_state.Reset();return false;
+  }
+  if(m_mouse_enabled&&m_mouse_panel)m_mouse_panel->SetReady(false);
+  return true;
+}
+void RimeWithWeaselHandler::_NumLockPressed(const KBDLLHOOKSTRUCT& key,uint64_t generation){
+  std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);
+  BihuaPhysicalEventV1 event;event.vk=key.vkCode;event.scan=key.scanCode;
+  event.flags=(key.flags&LLKHF_EXTENDED)?1:0;event.rime=0xff7f;
+  int action=m_keyboard_bindings.Resolve(event);
+  if(action<0)return;
+  _QueueKeyboardAction(action<6?action:action==6?BihuaMouseState::Separator:BihuaMouseState::SymbolToggle,static_cast<uint32_t>(generation));
 }
 void RimeWithWeaselHandler::_MouseDisplayed(DWORD generation,uint64_t revision,int first,int count){
   std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);
@@ -200,6 +230,13 @@ DWORD RimeWithWeaselHandler::MouseCommand(WEASEL_IPC_COMMAND command,DWORD value
     auto profile=m_mouse_profiles.find(session);
     if(value>2||profile==m_mouse_profiles.end())return 0;
     profile->second.mode=static_cast<int>(value);
+    if(value>0){
+      m_physical_keys.erase(session);
+      rime_api->set_property(to_session_id(session),"bihua_mouse_action","symbol_cancel");
+      rime_api->process_key(to_session_id(session),0xffd5,0);
+      rime_api->set_property(to_session_id(session),"bihua_mouse_action","");
+      _UpdateMouse(session);
+    }
     if(session==_MouseProfileSession())m_mouse_panel->SetKeyboardMode(static_cast<int>(value));
     return 1;
   }
@@ -239,12 +276,12 @@ DWORD RimeWithWeaselHandler::MouseCommand(WEASEL_IPC_COMMAND command,DWORD value
     }else{m_mouse_targets.erase(session);m_mouse_profiles.erase(session);}
     _UpdateMouse(0);return 1;
   }
-  if(command==WEASEL_IPC_MOUSE_TAKE)return _MouseTargetValid()?m_mouse_state.Take(session):0;
+  if(command==WEASEL_IPC_MOUSE_TAKE)return (m_mouse_pending_view?_MouseTargetValid():_KeyboardTargetValid())?m_mouse_state.Take(session):0;
   if(command==WEASEL_IPC_MOUSE_FINISH){
     bool ok=m_mouse_state.Finish(session,value);_UpdateMouse(0);return ok;
   }
-  if(command!=WEASEL_IPC_MOUSE_EXECUTE||!_MouseTargetValid())return 0;
-  if(m_mouse_pending_view!=m_mouse_view.revision)return 0;
+  if(command!=WEASEL_IPC_MOUSE_EXECUTE||!(m_mouse_pending_view?_MouseTargetValid():_KeyboardTargetValid()))return 0;
+  if(m_mouse_pending_view&&m_mouse_pending_view!=m_mouse_view.revision)return 0;
   int action=m_mouse_state.Execute(session,value,GetTickCount64());
   if(action<0)return 0;
   const int index=m_mouse_state.candidate_index;
@@ -256,6 +293,9 @@ DWORD RimeWithWeaselHandler::MouseCommand(WEASEL_IPC_COMMAND command,DWORD value
     rime_api->set_property(rime,"bihua_mouse_action",names[action]);
     rime_api->process_key(rime,0xffd5,0);
     rime_api->set_property(rime,"bihua_mouse_action","");
+  }else if(action==BihuaMouseState::Separator||action==BihuaMouseState::SymbolToggle||action==BihuaMouseState::SymbolCancel){
+    const char* name=action==BihuaMouseState::Separator?"separator":action==BihuaMouseState::SymbolToggle?"symbol_toggle":"symbol_cancel";
+    rime_api->set_property(rime,"bihua_mouse_action",name);rime_api->process_key(rime,0xffd5,0);rime_api->set_property(rime,"bihua_mouse_action","");
   }else if(action<8)rime_api->process_key(rime,action==6?ibus::Page_Up:ibus::Page_Down,0);
   else if(action==17){
     RIME_STRUCT(RimeContext,ctx);bool pending=false;

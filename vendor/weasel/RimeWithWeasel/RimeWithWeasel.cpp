@@ -1,4 +1,5 @@
-﻿#include "stdafx.h"
+﻿// Bihua physical event v1
+#include "stdafx.h"
 #include <logging.h>
 #include <RimeWithWeasel.h>
 #include <StringAlgorithm.hpp>
@@ -96,13 +97,16 @@ RimeWithWeaselHandler::RimeWithWeaselHandler(UI* ui)
   }
   m_pid = (m_pid << (31 - msbit));
   _Setup();
+  m_numlock.pressed=[this](const KBDLLHOOKSTRUCT& key,uint64_t generation){_NumLockPressed(key,generation);};
   wchar_t executable[32768]{};GetModuleFileNameW(nullptr,executable,32768);
   m_mouse_strokes.Load(std::filesystem::path(executable).parent_path()/L"data");
   m_mouse_panel=std::make_unique<BihuaMousePanel>();
+  m_mouse_panel->personal_started=[this](){_QueueKeyboardAction(BihuaMouseState::SymbolCancel,0);};
   m_mouse_panel->clicked=[this](int action,int index,DWORD generation,uint64_t revision,uint64_t view){_QueueMouseAction(action,index,generation,revision,view);};
   m_mouse_panel->displayed=[this](DWORD generation,uint64_t revision,int first,int count){_MouseDisplayed(generation,revision,first,count);};
   m_mouse_panel->target_valid=[this](){return _MouseHeartbeat();};
   m_mouse_panel->ConfigurePersonal(WeaselUserDataPath(),std::filesystem::path(executable).parent_path(),m_mouse_copy,m_mouse_selection);
+  m_mouse_panel->ConfigurePersonalKeys(m_keyboard_bindings);
   m_mouse_panel->Create();
 }
 
@@ -203,20 +207,22 @@ void RimeWithWeaselHandler::Initialize() {
     rime_api->config_get_bool(&config,"bihua_mouse/copy_stroke",&copy);
     rime_api->config_get_bool(&config,"bihua_mouse/selection_stroke",&selected);
     m_mouse_copy=!!copy;m_mouse_selection=!!selected;
+    RimeConfig key_config={NULL};
+    BihuaPersonalKeyMap keys;
+    if(rime_api->schema_open("bihua_mvp",&key_config)){
+      keys=BihuaPersonalKeyMap::Read([&](const std::string& path){
+        char value[64]{};return rime_api->config_get_string(&key_config,path.c_str(),value,sizeof(value))?std::string(value):std::string();
+      });
+      rime_api->config_close(&key_config);
+    }
+    if(keys.valid)m_keyboard_bindings=keys;
+    else LOG(ERROR)<<"Bihua key bindings invalid; retaining the last valid projection.";
+    m_keypad_previous=!m_keyboard_bindings.UsesVirtual(VK_DIVIDE);
+    m_keypad_next=!m_keyboard_bindings.UsesVirtual(VK_MULTIPLY);
     if(m_mouse_panel){
       wchar_t program[32768]{};GetModuleFileNameW(nullptr,program,32768);
       m_mouse_panel->ConfigurePersonal(WeaselUserDataPath(),std::filesystem::path(program).parent_path(),m_mouse_copy,m_mouse_selection);
-      RimeConfig key_config={NULL};
-      BihuaPersonalKeyMap keys;
-      if(rime_api->schema_open("bihua_mvp",&key_config)){
-        keys=BihuaPersonalKeyMap::Read([&](const std::string& path){
-          char value[64]{};return rime_api->config_get_string(&key_config,path.c_str(),value,sizeof(value))?std::string(value):std::string();
-        });
-        rime_api->config_close(&key_config);
-      }
-      m_mouse_panel->ConfigurePersonalKeys(keys);
-      m_keypad_previous=std::find(keys.keypad.begin(),keys.keypad.end(),VK_DIVIDE)==keys.keypad.end();
-      m_keypad_next=std::find(keys.keypad.begin(),keys.keypad.end(),VK_MULTIPLY)==keys.keypad.end();
+      m_mouse_panel->ConfigurePersonalKeys(m_keyboard_bindings);
     }
     _LoadAppOptions(&config, m_app_options);
     rime_api->config_close(&config);
@@ -226,6 +232,7 @@ void RimeWithWeaselHandler::Initialize() {
 }
 
 void RimeWithWeaselHandler::Finalize() {
+  m_numlock.Stop();
   std::lock_guard<std::recursive_mutex> mouse_lock(m_mouse_mutex);
   {std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);m_mouse_state.Focus(0);m_mouse_targets.clear();m_mouse_profiles.clear();}
   _UpdateMouse(0);
@@ -456,6 +463,7 @@ void RimeWithWeaselHandler::FocusIn(DWORD client_caps, WeaselSessionId ipc_id) {
 }
 
 void RimeWithWeaselHandler::FocusOut(DWORD param, WeaselSessionId ipc_id) {
+  m_physical_keys.erase(ipc_id);
   DLOG(INFO) << "Focus out: ipc_id = " << ipc_id;
   if (!m_disabled) BihuaNeutralFocusOut(rime_api, to_session_id(ipc_id));
   if (m_ui)
@@ -1585,3 +1593,5 @@ bool RimeWithWeaselHandler::ActivateBihua() {
 }
 
 #include <BihuaMouseBackend.h>
+
+#include <BihuaPhysicalBackend.h>

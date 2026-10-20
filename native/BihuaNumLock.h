@@ -3,6 +3,8 @@
 #include <atomic>
 #include <memory>
 #include <thread>
+#include <functional>
+#include <cstdint>
 
 // Pure transitions let probes exercise boundaries without OS keystrokes.
 struct BihuaNumLockPolicy {
@@ -25,10 +27,13 @@ struct BihuaNumLockPolicy {
 class BihuaNumLockGuard {
  public:
   ~BihuaNumLockGuard(){Stop();}
-  void Publish(HWND foreground,HWND focus){
+  std::function<void(const KBDLLHOOKSTRUCT&,uint64_t)> pressed;
+  void Publish(HWND foreground,HWND focus,uint64_t generation=0){
     auto lease=std::make_shared<Lease>();lease->front=foreground;lease->focus=focus;
+    lease->generation=generation;
     if(foreground)lease->thread=GetWindowThreadProcessId(foreground,&lease->pid);
     std::atomic_store(&published,std::shared_ptr<const Lease>(lease));
+    if(thread_id)PostThreadMessageW(thread_id,RefreshMessage,0,0);
     if(!worker.joinable()&&foreground){
       stopping=false;
       try{worker=std::thread([this]{Run();});}catch(...){return;}
@@ -39,12 +44,15 @@ class BihuaNumLockGuard {
     if(worker.joinable()){if(thread_id)PostThreadMessageW(thread_id,WM_QUIT,0,0);worker.join();}
   }
  private:
-  struct Lease{HWND front=nullptr,focus=nullptr;DWORD pid=0,thread=0;};
+  struct Lease{HWND front=nullptr,focus=nullptr;DWORD pid=0,thread=0;uint64_t generation=0;};
   std::shared_ptr<const Lease> published;
   std::thread worker;std::atomic<DWORD> thread_id{0};std::atomic<bool> stopping{false};
   HHOOK hook=nullptr;BihuaNumLockPolicy policy;
+  bool pending_edge=false;KBDLLHOOKSTRUCT edge_key{};
+  HWND edge_front=nullptr,edge_focus=nullptr;uint64_t edge_generation=0;
   inline static thread_local BihuaNumLockGuard* current=nullptr;
   static constexpr ULONG_PTR ownTag=0x42484e4c;
+  static constexpr UINT RefreshMessage=WM_APP+97,EdgeMessage=WM_APP+98;
   bool Eligible(){
     auto lease=std::atomic_load(&published);
     if(!lease||!lease->front||GetForegroundWindow()!=lease->front)return false;
@@ -65,10 +73,15 @@ class BihuaNumLockGuard {
   }
   void Refresh(){
     bool eligible=Eligible();
-    if(policy.held&&!eligible)return;
+    if(policy.held&&!eligible){pending_edge=false;return;}
     // Our synthetic events are suppressed before reaching an application
     // queue. While leased, use the state we enforce, not that queue's snapshot.
     if(policy.Lease(eligible,policy.active||(GetKeyState(VK_NUMLOCK)&1)!=0))Send();
+    if(pending_edge){
+      pending_edge=false;auto lease=std::atomic_load(&published);
+      if(eligible&&lease&&lease->front==edge_front&&lease->focus==edge_focus&&lease->generation==edge_generation&&pressed)
+        pressed(edge_key,edge_generation);
+    }
   }
   static LRESULT CALLBACK Hook(int code,WPARAM wp,LPARAM lp){
     auto self=current;if(code<0||!self)return CallNextHookEx(nullptr,code,wp,lp);
@@ -78,16 +91,25 @@ class BihuaNumLockGuard {
     if(key.flags&LLKHF_INJECTED)return CallNextHookEx(nullptr,code,wp,lp);
     bool down=wp==WM_KEYDOWN||wp==WM_SYSKEYDOWN;
     int action=self->policy.Key(down,self->policy.active&&self->Eligible());
-    if(action==2)Send(true);
+    if(action==2){
+      Send(true);
+      bool modifiers=(GetAsyncKeyState(VK_CONTROL)&0x8000)||(GetAsyncKeyState(VK_MENU)&0x8000)||
+        (GetAsyncKeyState(VK_SHIFT)&0x8000)||(GetAsyncKeyState(VK_LWIN)&0x8000)||(GetAsyncKeyState(VK_RWIN)&0x8000);
+      auto lease=std::atomic_load(&self->published);
+      if(!modifiers&&lease){self->edge_key=key;self->edge_front=lease->front;self->edge_focus=lease->focus;
+        self->edge_generation=lease->generation;self->pending_edge=true;
+        PostThreadMessageW(self->thread_id,EdgeMessage,0,0);}
+    }
     return action?1:CallNextHookEx(nullptr,code,wp,lp);
   }
   void Run(){
     current=this;thread_id=GetCurrentThreadId();MSG message{};PeekMessageW(&message,nullptr,0,0,PM_NOREMOVE);
     hook=SetWindowsHookExW(WH_KEYBOARD_LL,Hook,GetModuleHandleW(nullptr),0);
     if(hook){
+      Refresh();
       SetTimer(nullptr,1,40,nullptr);
       while(!stopping&&GetMessageW(&message,nullptr,0,0)>0){
-        if(message.message==WM_TIMER)Refresh();
+        if(message.message==WM_TIMER||message.message==RefreshMessage||message.message==EdgeMessage)Refresh();
         else{TranslateMessage(&message);DispatchMessageW(&message);}
       }
       if(policy.active&&policy.Lease(false,true))Send();

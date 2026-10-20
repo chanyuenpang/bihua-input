@@ -10,7 +10,7 @@ import threading
 import struct
 import zlib
 
-from key_bindings import ACTIONS, LETTER, KEYPAD, physical_vk
+from key_bindings import ACTIONS, LETTER, KEYPAD, physical_vk, physical_key, parse_key, reserved_reason, overlaps, validate as validate_keys, assign as assign_key
 import appearance
 import stroke_icons
 
@@ -104,6 +104,13 @@ def fit_scale(dpi,rect):
     return max(.55,min(dpi/96,(rect.right-rect.left-60)/980,(rect.bottom-rect.top-80)/620))
 
 def key_label(value):
+    if not value:return '未设置'
+    if value.startswith('win-v1:'):
+        key=parse_key(value);buf=c.create_unicode_buffer(128)
+        if key['scan'] and u.GetKeyNameTextW((key['scan']<<16)|(key['extended']<<24),buf,len(buf)):
+            return buf.value
+        return 'VK '+format(key['vk'],'02X')+'（无扫描码）'
+    if value=='Num_Lock':return 'Num Lock'
     return {'KP_Divide':'小键盘 /','KP_Multiply':'小键盘 *','KP_Decimal':'小键盘 .'}.get(value,'小键盘 '+value[3:] if value.startswith('KP_') else value.upper())
 
 def show_native_window(handle):
@@ -121,7 +128,7 @@ class Window:
         self.brushes={name:g.CreateSolidBrush(color) for name,color in COLORS.items()}
         self.instance=k.GetModuleHandleW(None)
         self.proc=PROC(self.wndproc)
-        wc=WNDCLASS(0,self.proc,0,0,self.instance,None,u.LoadCursorW(None,c.c_void_p(32512)),self.brushes['background'],None,'BihuaNativeSettingsV17')
+        wc=WNDCLASS(0,self.proc,0,0,self.instance,None,u.LoadCursorW(None,c.c_void_p(32512)),self.brushes['background'],None,'BihuaNativeSettingsV18')
         if not u.RegisterClassW(c.byref(wc)) and c.get_last_error()!=1410: raise c.WinError(c.get_last_error())
         self.hwnd=u.CreateWindowExW(0,wc.name,'笔画设置',0x00ca0000,100,40,int(980*self.scale),int(620*self.scale),None,None,self.instance,None)
         if not self.hwnd: raise c.WinError(c.get_last_error())
@@ -177,7 +184,7 @@ class Window:
         self.cancel_capture()
         self.capture_name=name
         u.SetWindowTextW(self.controls[name],'请按键…   Esc 取消')
-        u.SetWindowTextW(self.status,'请按一个'+('字母键 A–Z' if name.startswith('letter_') else '小键盘 1–9、.、/ 或 *'))
+        u.SetWindowTextW(self.status,'请按要绑定的键；Esc 取消')
         self.hook_callback=HOOK(self.keyboard_hook)
         self.hook=u.SetWindowsHookExW(13,self.hook_callback,self.instance,0)
         if not self.hook:
@@ -194,33 +201,32 @@ class Window:
     def keyboard_hook(self,code,wp,lp):
         if code>=0 and self.capture_name and wp in (0x100,0x104):
             key=c.cast(lp,c.POINTER(KEYINFO)).contents
-            vk=physical_vk(key.vk,key.scan,bool(key.flags&1))
-            if self.handle_capture_key(vk,u.GetForegroundWindow()==self.hwnd): return 1
+            if self.handle_capture_key(key.vk,u.GetForegroundWindow()==self.hwnd,key.scan,bool(key.flags&1),bool(key.flags&0x10)): return 1
         return u.CallNextHookEx(self.hook,code,wp,lp)
 
-    def handle_capture_key(self,vk,foreground):
+    def handle_capture_key(self,vk,foreground,scan=0,extended=False,injected=False):
+        if injected:return False
         if not foreground or vk in (0x09,0x11,0x12,0x5b,0x5c,0xa2,0xa3,0xa4,0xa5):
             self.cancel_capture();return False
-        if vk in (0x10,0xa0,0xa1): return False
-        self.capture_vk(vk);return True
+        if vk in (0x10,0xa0,0xa1,0x14):
+            u.SetWindowTextW(self.status,reserved_reason(physical_key(vk,scan,extended)));return False
+        self.capture_vk(vk,scan,extended);return True
 
-    def capture_vk(self,vk):
+    def capture_vk(self,vk,scan=0,extended=False):
         name=self.capture_name
         if not name: return
         if vk==0x1b:
             self.cancel_capture();u.SetWindowTextW(self.status,'已取消录入');return
-        device=name.split('_')[0]
-        value=chr(vk).lower() if device=='letter' and 0x41<=vk<=0x5a else (
-              'KP_'+str(vk-0x60) if device=='keypad' and 0x61<=vk<=0x69 else
-              {0x6f:'KP_Divide',0x6a:'KP_Multiply',0x6e:'KP_Decimal'}.get(vk) if device=='keypad' else None)
-        if not value:
-            u.SetWindowTextW(self.status,'请按'+('字母 A–Z' if device=='letter' else '小键盘 1–9、.、/ 或 *')+'；Esc 取消')
-            return
-        if any(k!=name and k.startswith(device+'_') and v==value for k,v in self.key_values.items()):
-            u.SetWindowTextW(self.status,key_label(value)+' 已被占用，请按其他键；Esc 取消')
-            return
-        self.cancel_capture();self.set_value(name,value);self.changed(name)
-        u.SetWindowTextW(self.status,'已录入 '+key_label(value)+' · 保存并应用后生效')
+        value=physical_key(vk,scan,extended)
+        try:proposed,cleared=assign_key(self.values(),name,value)
+        except ValueError as error:
+            u.SetWindowTextW(self.status,str(error)+'；Esc 取消');return
+        self.cancel_capture()
+        for device in ('letter','keypad'):
+            self.set_value(device+'_style',proposed[device+'_style'])
+            for action in ACTIONS:self.set_value(device+'_'+action,proposed[device+'_keys'][action])
+        self.set_value('symbol_toggle',proposed['symbol_toggle']);self.mark_dirty()
+        u.SetWindowTextW(self.status,'已录入 '+key_label(value)+(' · 已清空原绑定' if cleared else '')+' · 保存并应用后生效')
 
     def paint(self,hwnd):
         paint=PAINT();dc=u.BeginPaint(hwnd,c.byref(paint))
@@ -360,7 +366,10 @@ class Window:
                 name=device+'_'+action
                 self.key_values[name]=''
                 self.button('',x,y,236,lambda n=name:self.arm_capture(n),'keys',name)
-        self.label('小键盘 . 分词；/、* 左右选字；空闲数字键依次直选。',246,510,650,page='keys')
+        self.label('符号入口',292,501,84,page='keys')
+        self.key_values['symbol_toggle']=''
+        self.button('',385,496,236,lambda:self.arm_capture('symbol_toggle'),'keys','symbol_toggle')
+        self.button('停用',660,496,115,self.clear_symbol_key,'keys')
         self.label('候选与翻页',246,32,height=38,page='paging')
         self.checkbox('arrow_navigation','方向键选字 · ↓ 展开五行，首行 ↑ 收起',100,'paging',246,650)
         self.label('左右移动；空格 / 小键盘 0 确认。',246,142,650,page='paging')
@@ -456,6 +465,7 @@ class Window:
         for name in ('prediction_pages','font_size','letter_style','keypad_style',*appearance.FIELDS): self.set_value(name,s[name])
         for device in ('letter','keypad'):
             for action in ACTIONS: self.set_value(device+'_'+action,s[device+'_keys'][action])
+        self.set_value('symbol_toggle',s['symbol_toggle'])
         self.refresh_words();self.refresh_strokes();self.dirty=False
         u.SetWindowTextW(self.status,'已读取当前设置')
 
@@ -463,7 +473,11 @@ class Window:
         s={name:bool(self.send(self.controls[name],0xf0)) for name in panel.BOOLS}
         for name in ('prediction_pages','font_size','letter_style','keypad_style',*appearance.FIELDS): s[name]=self.value(name)
         for device in ('letter','keypad'): s[device+'_keys']={a:self.value(device+'_'+a) for a in ACTIONS}
+        s['symbol_toggle']=self.value('symbol_toggle')
         return s
+
+    def clear_symbol_key(self):
+        self.set_value('symbol_toggle','');self.mark_dirty()
 
     def mark_dirty(self):
         self.dirty=True;u.SetWindowTextW(self.status,'有未应用的更改')
@@ -528,7 +542,13 @@ class Window:
     def changed(self,name):
         for device,presets in [('letter',LETTER),('keypad',KEYPAD)]:
             if name==device+'_style' and self.value(name)!='custom':
-                for action,value in presets[self.value(name)].items(): self.set_value(device+'_'+action,value)
+                style=self.value(name);proposed=self.values()
+                for action,value in presets[style].items():proposed,_=assign_key(proposed,device+'_'+action,value)
+                proposed[device+'_style']=style
+                for group in ('letter','keypad'):
+                    self.set_value(group+'_style',proposed[group+'_style'])
+                    for action in ACTIONS:self.set_value(group+'_'+action,proposed[group+'_keys'][action])
+                self.set_value('symbol_toggle',proposed['symbol_toggle'])
             elif name.startswith(device+'_') and name!=device+'_style': self.set_value(device+'_style','custom')
         self.mark_dirty()
 
@@ -672,27 +692,33 @@ class Window:
                 def capture_event(vk):
                     assert self.handle_capture_key(vk,True)
                 capture_event(ord('S'))
-                assert self.capture_name=='letter_h' and self.value('letter_h')=='a'
+                assert not self.capture_name and self.value('letter_h')==physical_key(ord('S'),0)
+                assert self.value('letter_s')=='','old same-group key was not cleared'
+                self.arm_capture('letter_h')
                 capture_event(ord('Q'))
                 assert self.value('letter_style')=='custom'
-                assert self.value('letter_h')=='q' and not self.hook
+                expected_q=physical_key(ord('Q'),0)
+                assert self.value('letter_h')==expected_q and not self.hook
                 self.arm_capture('keypad_h')
                 self.capture_vk(ord('1'))
-                assert self.capture_name=='keypad_h' and self.value('keypad_h')=='KP_7'
-                self.capture_vk(0x60)
-                assert self.capture_name=='keypad_h'
-                self.capture_vk(0x61)
-                assert self.value('keypad_h')=='KP_1' and not self.hook
-                self.arm_capture('keypad_separator');self.capture_vk(physical_vk(0x2e,0x53,False))
-                assert self.value('keypad_separator')=='KP_Decimal' and not self.hook
+                assert self.value('keypad_h')==physical_key(ord('1'),0) and not self.hook
+                self.arm_capture('keypad_h');self.capture_vk(0xff,0x63,False)
+                assert self.value('keypad_h')==physical_key(0xff,0x63) and not self.hook
+                self.arm_capture('keypad_h');self.capture_vk(ord('Q'))
+                assert not self.capture_name and self.value('letter_h')=='','cross-group old binding was not cleared'
+                assert self.value('keypad_h')==expected_q
+                self.arm_capture('keypad_h')
+                self.capture_vk(0xff,0x63,False)
+                self.arm_capture('keypad_separator');self.capture_vk(0x2e,0x53,False)
+                assert self.value('keypad_separator')==physical_key(0x2e,0x53) and not self.hook
                 assert physical_vk(0x2e,0x53,True)==0x2e
                 self.arm_capture('letter_h');self.capture_vk(0x1b)
-                assert not self.hook and self.value('letter_h')=='q'
+                assert not self.hook and self.value('letter_h')==''
                 self.arm_capture('letter_h');self.wndproc(hwnd,0x6,0,0)
                 assert not self.hook and not self.capture_name
                 self.arm_capture('letter_h')
                 assert not self.handle_capture_key(ord('W'),False)
-                assert not self.hook and self.value('letter_h')=='q'
+                assert not self.hook and self.value('letter_h')==''
                 self.service.preview(self.values())
                 self.load();self.show('keys')
                 initial=self.values();actual_dpi=self.dpi
@@ -795,7 +821,7 @@ def main():
     parser.add_argument('--smoke',type=Path)
     parser.add_argument('--page',choices=[page for page,_ in PAGES],default='keys')
     args=parser.parse_args()
-    previous=u.FindWindowW('BihuaNativeSettingsV17',None)
+    previous=u.FindWindowW('BihuaNativeSettingsV18',None)
     if previous and not args.smoke:
         u.SendMessageW(previous,0x8002,[page for page,_ in PAGES].index(args.page),0);return
     Window(panel.Settings(args.rime_dir),args.smoke,args.page).run()

@@ -11,6 +11,7 @@ function M.init(env)
   env.personal_runtime = require("bihua_personal_stroke_runtime")
   env.format_preedit = M.preedit
   local config = env.engine.schema.config
+  require('bihua_symbol_mode').init(env)
   require('bihua_character_learning').init(env)
   if config:get_bool("bihua_matcher/phrase_enabled") then
     env.phrase_runtime = require("bihua_phrase_runtime")
@@ -29,6 +30,7 @@ function M.init(env)
 end
 
 function M.fini(env)
+  require('bihua_symbol_mode').fini(env)
   require('bihua_character_learning').fini(env)
   if env.phrase_runtime then env.phrase_runtime.fini(env) end
   if env.association_runtime then env.association_runtime.fini(env) end
@@ -37,6 +39,7 @@ function M.fini(env)
 end
 
 function M.func(input, segment, env)
+  if require('bihua_symbol_mode').translate(segment,env) then return end
   local aliases = env.personal_runtime.refresh(env)
   if env.association_runtime and env.association_runtime.translate(segment, env) then return end
   if env.phrase_runtime and env.phrase_runtime.translate(input, segment, env) then return end

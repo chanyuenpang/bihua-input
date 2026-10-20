@@ -28,5 +28,10 @@ int main(){
   candidate=s.Queue(BihuaMouseState::Candidate,5003,s.generation,s.projection,36);
   assert(s.Execute(20,candidate,5004)==BihuaMouseState::Candidate&&s.candidate_index==36);
   assert(s.Finish(20,candidate));
+  for(int action:{BihuaMouseState::Separator,BihuaMouseState::SymbolToggle,BihuaMouseState::SymbolCancel}){
+    auto token=s.Queue(action,6000,s.generation,s.projection);assert(token);
+    assert(s.Execute(20,token,6001)==action&&s.Execute(20,token,6002)==-1&&s.Finish(20,token));
+  }
+  assert(!s.Queue(BihuaMouseState::SymbolCancel+1,7000,s.generation));
   std::cout<<"{\"result\":\"PASS\",\"idle_rejects\":true,\"lease_generation\":true,\"late_blur\":true,\"single_inflight\":true,\"at_most_once\":true,\"expiry\":true,\"wrong_session\":true}";
 }

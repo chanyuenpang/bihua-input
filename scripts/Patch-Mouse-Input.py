@@ -128,6 +128,9 @@ edit('include/RimeWithWeasel.h',[
   bool _KeypadNavigate(const weasel::KeyEvent& key,DWORD session,EatLine eat);
   bool m_keypad_previous=true,m_keypad_next=true;
   BihuaNumLockGuard m_numlock;
+  BihuaPersonalKeyMap m_keyboard_bindings;
+  bool _QueueKeyboardAction(int action,uint32_t generation);
+  void _NumLockPressed(const KBDLLHOOKSTRUCT& key,uint64_t generation);
   void _UpdateMouse(DWORD session);
   bool _MouseHeartbeat();
   bool _MouseTargetValid();
@@ -155,13 +158,16 @@ edit('include/RimeWithWeasel.h',[
 edit('RimeWithWeasel/RimeWithWeasel.cpp',[
 ('void RimeWithWeaselHandler::Initialize() {','void RimeWithWeaselHandler::Initialize() {\n  std::lock_guard<std::recursive_mutex> mouse_lock(m_mouse_mutex);'),
 ('  _Setup();\n}', '''  _Setup();
+  m_numlock.pressed=[this](const KBDLLHOOKSTRUCT& key,uint64_t generation){_NumLockPressed(key,generation);};
   wchar_t executable[32768]{};GetModuleFileNameW(nullptr,executable,32768);
   m_mouse_strokes.Load(std::filesystem::path(executable).parent_path()/L"data");
   m_mouse_panel=std::make_unique<BihuaMousePanel>();
+  m_mouse_panel->personal_started=[this](){_QueueKeyboardAction(BihuaMouseState::SymbolCancel,0);};
   m_mouse_panel->clicked=[this](int action,int index,DWORD generation,uint64_t revision,uint64_t view){_QueueMouseAction(action,index,generation,revision,view);};
   m_mouse_panel->displayed=[this](DWORD generation,uint64_t revision,int first,int count){_MouseDisplayed(generation,revision,first,count);};
   m_mouse_panel->target_valid=[this](){return _MouseHeartbeat();};
   m_mouse_panel->ConfigurePersonal(WeaselUserDataPath(),std::filesystem::path(executable).parent_path(),m_mouse_copy,m_mouse_selection);
+  m_mouse_panel->ConfigurePersonalKeys(m_keyboard_bindings);
   m_mouse_panel->Create();
 }'''),
 ('    _LoadAppOptions(&config, m_app_options);', '''    Bool mouse_enabled=false;
@@ -175,24 +181,27 @@ edit('RimeWithWeasel/RimeWithWeasel.cpp',[
     rime_api->config_get_bool(&config,"bihua_mouse/copy_stroke",&copy);
     rime_api->config_get_bool(&config,"bihua_mouse/selection_stroke",&selected);
     m_mouse_copy=!!copy;m_mouse_selection=!!selected;
+    RimeConfig key_config={NULL};
+    BihuaPersonalKeyMap keys;
+    if(rime_api->schema_open("bihua_mvp",&key_config)){
+      keys=BihuaPersonalKeyMap::Read([&](const std::string& path){
+        char value[64]{};return rime_api->config_get_string(&key_config,path.c_str(),value,sizeof(value))?std::string(value):std::string();
+      });
+      rime_api->config_close(&key_config);
+    }
+    if(keys.valid)m_keyboard_bindings=keys;
+    else LOG(ERROR)<<"Bihua key bindings invalid; retaining the last valid projection.";
+    m_keypad_previous=!m_keyboard_bindings.UsesVirtual(VK_DIVIDE);
+    m_keypad_next=!m_keyboard_bindings.UsesVirtual(VK_MULTIPLY);
     if(m_mouse_panel){
       wchar_t program[32768]{};GetModuleFileNameW(nullptr,program,32768);
       m_mouse_panel->ConfigurePersonal(WeaselUserDataPath(),std::filesystem::path(program).parent_path(),m_mouse_copy,m_mouse_selection);
-      RimeConfig key_config={NULL};
-      BihuaPersonalKeyMap keys;
-      if(rime_api->schema_open("bihua_mvp",&key_config)){
-        keys=BihuaPersonalKeyMap::Read([&](const std::string& path){
-          char value[64]{};return rime_api->config_get_string(&key_config,path.c_str(),value,sizeof(value))?std::string(value):std::string();
-        });
-        rime_api->config_close(&key_config);
-      }
-      m_mouse_panel->ConfigurePersonalKeys(keys);
-      m_keypad_previous=std::find(keys.keypad.begin(),keys.keypad.end(),VK_DIVIDE)==keys.keypad.end();
-      m_keypad_next=std::find(keys.keypad.begin(),keys.keypad.end(),VK_MULTIPLY)==keys.keypad.end();
+      m_mouse_panel->ConfigurePersonalKeys(m_keyboard_bindings);
     }
     _LoadAppOptions(&config, m_app_options);'''),
 ('  m_last_schema_id.clear();\n}', '  m_last_schema_id.clear();\n  _UpdateMouse(0);\n}'),
 ('void RimeWithWeaselHandler::Finalize() {','''void RimeWithWeaselHandler::Finalize() {
+  m_numlock.Stop();
   std::lock_guard<std::recursive_mutex> mouse_lock(m_mouse_mutex);
   {std::lock_guard<std::recursive_mutex> lock(m_mouse_mutex);m_mouse_state.Focus(0);m_mouse_targets.clear();m_mouse_profiles.clear();}
   _UpdateMouse(0);'''),
@@ -309,6 +318,6 @@ edit('WeaselTSF/CandidateList.cpp',[
 ('void CCandidateList::UpdateUI(const Context& ctx, const Status& status) {','void CCandidateList::UpdateUI(const Context& ctx, const Status& status) {\n  if(_tsf->MousePanelEnabled()){Show(FALSE);return;}'),
 ('void CCandidateList::StartUI() {','void CCandidateList::StartUI() {\n  if(_tsf->MousePanelEnabled())return;'),
 ('void WeaselTSF::_ShowUI() {','void WeaselTSF::_ShowUI() {\n  if(_mousePanelEnabled)return;')])
-for name in ('BihuaMouseState.h','BihuaMousePanel.h','BihuaMouseView.h','BihuaStrokeInfo.h','BihuaKeyboardRoute.h','BihuaPersonalRecorder.h','BihuaPersonalKeys.h','BihuaNumLock.h'):shutil.copy2(ROOT/'native'/name,SRC/'include'/name)
+for name in ('BihuaMouseState.h','BihuaMousePanel.h','BihuaMouseView.h','BihuaStrokeInfo.h','BihuaKeyboardRoute.h','BihuaPersonalRecorder.h','BihuaPersonalKeys.h','BihuaNumLock.h','BihuaPhysicalKey.h'):shutil.copy2(ROOT/'native'/name,SRC/'include'/name)
 shutil.copy2(ROOT/'native/BihuaMouseTSF.h',SRC/'WeaselTSF/BihuaMouseTSF.h')
 print('Native mouse server/IPC patch applied')

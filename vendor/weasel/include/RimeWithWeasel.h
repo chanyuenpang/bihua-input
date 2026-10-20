@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// Bihua physical event v1
+#pragma once
 #include <WeaselIPC.h>
 #include <WeaselUI.h>
 #include <map>
@@ -74,6 +75,9 @@ class RimeWithWeaselHandler : public weasel::RequestHandler {
   void OnUpdateUI(std::function<void()> const& cb);
 
  private:
+  virtual DWORD PhysicalKeyEvent(const BihuaPhysicalEventV1& event,DWORD session,EatLine eat,bool query) override;
+  std::map<DWORD,std::array<bool,1024>> m_physical_keys;
+  bool _KeyboardTargetValid();
   void _Setup();
   void _QueueMouseAction(int action,int index,DWORD displayed_generation,uint64_t revision,uint64_t view);
   void _MouseDisplayed(DWORD generation,uint64_t revision,int first,int count);
@@ -82,6 +86,9 @@ class RimeWithWeaselHandler : public weasel::RequestHandler {
   bool _KeypadNavigate(const weasel::KeyEvent& key,DWORD session,EatLine eat);
   bool m_keypad_previous=true,m_keypad_next=true;
   BihuaNumLockGuard m_numlock;
+  BihuaPersonalKeyMap m_keyboard_bindings;
+  bool _QueueKeyboardAction(int action,uint32_t generation);
+  void _NumLockPressed(const KBDLLHOOKSTRUCT& key,uint64_t generation);
   void _UpdateMouse(DWORD session);
   bool _MouseHeartbeat();
   bool _MouseTargetValid();

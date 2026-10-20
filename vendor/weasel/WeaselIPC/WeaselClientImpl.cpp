@@ -1,4 +1,5 @@
-﻿#include "stdafx.h"
+﻿// Bihua physical event v1
+#include "stdafx.h"
 #include "WeaselClientImpl.h"
 #include <StringAlgorithm.hpp>
 
@@ -64,6 +65,18 @@ bool ClientImpl::ProcessKeyEvent(KeyEvent const& keyEvent) {
   return ret != 0;
 }
 
+DWORD ClientImpl::PhysicalRequest(UINT vk,LPARAM raw,const KeyEvent& legacy,bool query){
+  if(!_Active())return 0;
+  if(physical_capability<0)physical_capability=_SendMessage(WEASEL_IPC_PHYSICAL_CAPABILITY,0,session_id)==1?1:0;
+  if(!physical_capability)return query?0:(legacy.keycode?ProcessKeyEvent(legacy):0);
+  KeyInfo info(raw);BihuaPhysicalEventV1 event;event.vk=vk;event.scan=info.scanCode;
+  event.flags=(info.isExtended?1:0)|(info.isKeyUp?2:0)|(info.prevKeyState?4:0);event.repeat=info.repeatCount;event.rime=legacy;
+  if(!event.Valid())return 0;
+  channel.WritePayload(&event,sizeof(event));
+  return static_cast<DWORD>(_SendMessage(query?WEASEL_IPC_PHYSICAL_QUERY:WEASEL_IPC_PHYSICAL_KEY,sizeof(event),session_id));
+}
+bool ClientImpl::ProcessPhysicalKeyEvent(UINT vk,LPARAM info,const KeyEvent& legacy){return PhysicalRequest(vk,info,legacy,false)!=0;}
+bool ClientImpl::IsPhysicalKeyBound(UINT vk,LPARAM info){return PhysicalRequest(vk,info,KeyEvent(),true)!=0;}
 bool ClientImpl::CommitComposition() {
   if (!_Active())
     return false;
@@ -153,6 +166,7 @@ void ClientImpl::StartSession() {
   _WriteClientInfo();
   UINT ret = _SendMessage(WEASEL_IPC_START_SESSION, 0, 0);
   session_id = ret;
+  physical_capability=-1;
 }
 
 void ClientImpl::EndSession() {
@@ -228,6 +242,8 @@ bool Client::ProcessKeyEvent(KeyEvent const& keyEvent) {
   return m_pImpl->ProcessKeyEvent(keyEvent);
 }
 
+bool Client::ProcessPhysicalKeyEvent(UINT vk,LPARAM info,const KeyEvent& legacy){return m_pImpl->ProcessPhysicalKeyEvent(vk,info,legacy);}
+bool Client::IsPhysicalKeyBound(UINT vk,LPARAM info){return m_pImpl->IsPhysicalKeyBound(vk,info);}
 bool Client::CommitComposition() {
   return m_pImpl->CommitComposition();
 }

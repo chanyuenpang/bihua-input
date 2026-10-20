@@ -1,4 +1,5 @@
-﻿#include "stdafx.h"
+﻿// Bihua physical event v1
+#include "stdafx.h"
 
 #include <PipeChannel.h>
 
@@ -99,17 +100,22 @@ void PipeChannelBase::_FinalizePipe(HANDLE& p) {
 }
 
 void PipeChannelBase::_Receive(HANDLE pipe, LPVOID msg, size_t rec_len) {
+  received_body_bytes=0;bool body=false;
   DWORD lread;
   BOOL success = ::ReadFile(pipe, msg, rec_len, &lread, NULL);
+  if(lread!=rec_len)throw DWORD(ERROR_INVALID_DATA);
   if (!success) {
     _ThrowIfNot(ERROR_MORE_DATA);
 
+    body=true;
     memset(buffer.get(), 0, buff_size);
     success = ::ReadFile(pipe, buffer.get(), buff_size, &lread, NULL);
     if (!success) {
       _ThrowLastError;
     }
   }
+  if(!success)throw DWORD(ERROR_READ_FAULT);
+  received_body_bytes=body?lread:0;
   has_body = false;
 }
 

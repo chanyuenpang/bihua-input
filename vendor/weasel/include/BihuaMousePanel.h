@@ -21,6 +21,8 @@ class BihuaMousePanel {
   std::function<void(int, int, uint32_t, uint64_t, uint64_t)> clicked;
   std::function<void(uint32_t, uint64_t, int, int)> displayed;
   std::function<bool()> target_valid;
+  std::function<void()> personal_started;
+  bool PersonalDraft(){std::lock_guard<std::mutex> lock(mutex);return recorder.view==BihuaPersonalRecorder::Draft;}
   void ConfigurePersonalKeys(const BihuaPersonalKeyMap& map){
     capture.Pause();std::lock_guard<std::mutex> lock(mutex);personal_keys=map;
   }
@@ -681,6 +683,7 @@ class BihuaMousePanel {
           if(id==56)self->recorder.Begin();else if(id==57)self->recorder.Cancel();
           else if(id==58)self->recorder.Save();else if(id==17)self->recorder.Backspace();else if(id>=0&&id<5)self->recorder.Stroke(id);
           ++self->revision;}
+        if(id==56&&self->personal_started)self->personal_started();
         if(id!=57&&id!=58)self->ArmPersonalKeys();
         PostMessageW(hwnd,WM_APP+42,0,0);
       } else if (ok && action>=0 && self->clicked) {

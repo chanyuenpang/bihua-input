@@ -10,7 +10,7 @@ from key_bindings import LETTER, KEYPAD
 import release_profile
 
 ROOT=Path(__file__).resolve().parent.parent
-VERSION='0.6.30'
+VERSION='0.6.31'
 OUT=ROOT/'.verification/release'/VERSION
 APP=OUT/'payload'
 DIST=ROOT/'dist'
@@ -23,6 +23,10 @@ def copy(source,target):
 def build():
     if (DIST/'releases'/VERSION).exists():
         raise FileExistsError('已发布版本不可覆盖，请先递增版本号：'+VERSION)
+    # Rebuild from the allowlist even after an interrupted build or a test.
+    # Never carry generated user databases into a later installer.
+    assert APP.resolve()==OUT.resolve()/'payload' and OUT.resolve().is_relative_to((ROOT/'.verification/release').resolve())
+    if APP.exists():shutil.rmtree(APP)
     APP.mkdir(parents=True,exist_ok=True);DIST.mkdir(exist_ok=True)
     private=ROOT/'.verification/independent-package-0.5.2'
     native=ROOT/'.verification/weasel-native'
@@ -35,7 +39,7 @@ def build():
     copy(private/'python',APP/'python')
     for path in Path('C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Redist/MSVC/14.44.35112/x64/Microsoft.VC143.CRT').glob('*.dll'):
         copy(path,APP/path.name)
-    for name in ['Open-Settings.ps1','Native-Settings.py','Settings-Panel.py','appearance.py','key_bindings.py','Manage-Personal.py','personal_data.py','personal_strokes.py','stroke_icons.py']:
+    for name in ['Test-Symbol-Mode.py','Open-Settings.ps1','Native-Settings.py','Settings-Panel.py','appearance.py','key_bindings.py','Manage-Personal.py','personal_data.py','personal_strokes.py','stroke_icons.py']:
         copy(ROOT/'scripts'/name,APP/'scripts'/name)
     for path in (ROOT/'packaging').glob('*.py'):copy(path,APP/'scripts'/path.name)
     for name in ['default.yaml','key_bindings.yaml','punctuation.yaml','symbols.yaml','weasel.yaml']:
@@ -59,11 +63,11 @@ def build():
     schema['engine']['segmentors'].insert(0,'lua_segmentor@*bihua_query_segmentor')
     schema['bihua_phrase']={'dictionary':'bihua_local','user_dict':'bihua_mvp_phrase_v1'}
     schema['bihua_keys']={'letter_style':'standard','keypad_style':'standard',
-                          'letter':LETTER['standard'],'keypad':KEYPAD['standard']}
+                          'letter':LETTER['standard'],'keypad':KEYPAD['standard'],'symbol_toggle':'Num_Lock'}
     (profile/'bihua_mvp.schema.yaml').write_text(yaml.safe_dump(schema,allow_unicode=True,sort_keys=False),encoding='utf-8')
     (profile/'default.custom.yaml').write_text('patch:\n  schema_list:\n    - schema: bihua_mvp\n',encoding='utf-8')
     (profile/'weasel.custom.yaml').write_text('patch:\n  style/font_point: 18\n  style/horizontal: true\n',encoding='utf-8')
-    notice='''笔画输入法 0.6.30 测试版
+    notice='''笔画输入法 0.6.31 测试版
 
 Windows 前端基于 Weasel 0.17.4，GNU GPL v3。修改后前端与后台源代码随安装包提供。
 Rime 1.13.1: BSD-3-Clause, https://github.com/rime/librime
@@ -95,7 +99,7 @@ The installer contains no personal dictionary, personal stroke aliases or learne
         for folder in ['native','rime','settings','packaging','assets']:
             for path in (ROOT/folder).rglob('*'):
                 if path.is_file() and '__pycache__' not in path.parts: z.write(path,'project/'+path.relative_to(ROOT).as_posix())
-        for name in ['Build-Release.py','Build-Open-Profile.py','Build-Local-Profile.py','Build-Provided-Profile.py','release_profile.py','Test-Provided-Data.py','Test-Provided-Rime.py','Test-Keypad-Learning.py','Settings-Panel.py','Native-Settings.py','appearance.py','Open-Settings.ps1','Manage-Personal.py','personal_data.py','personal_strokes.py','Test-Personal-Strokes.py','Test-Personal-Stroke-Save.py','key_bindings.py','stroke_icons.py','Test-Release-Transactions.py','Test-Installer-Scheduler.py','Test-Appearance.py','Test-Settings-Panel.py','Patch-Single-Menu.py','Patch-Native-Source.py','Patch-Native-Menus.py','Patch-Independent-Profile.py','Patch-Mouse-Input.py']:
+        for name in ['Build-Release.py','Build-Open-Profile.py','Build-Local-Profile.py','Build-Provided-Profile.py','release_profile.py','Test-Provided-Data.py','Test-Provided-Rime.py','Test-Keypad-Learning.py','Test-Symbol-Mode.py','Test-Physical-Key-Bindings.py','Settings-Panel.py','Native-Settings.py','appearance.py','Open-Settings.ps1','Manage-Personal.py','personal_data.py','personal_strokes.py','Test-Personal-Strokes.py','Test-Personal-Stroke-Save.py','key_bindings.py','stroke_icons.py','Test-Release-Transactions.py','Test-Installer-Scheduler.py','Test-Appearance.py','Test-Settings-Panel.py','Patch-Single-Menu.py','Patch-Native-Source.py','Patch-Native-Menus.py','Patch-Independent-Profile.py','Patch-Mouse-Input.py','Patch-Physical-Keys.py']:
             z.write(ROOT/'scripts'/name,'project/scripts/'+name)
         lock=release_profile.verified_source()
         for name in lock['source_exports']:
@@ -123,7 +127,7 @@ def dependency_source(z,native):
         z.write(archive,'dependencies/boost_1_84_0.7z',compress_type=zipfile.ZIP_STORED)
         z.write(boost/'LICENSE_1_0.txt','boost-1.84.0/LICENSE_1_0.txt')
 def finalize():
-    manifest={'version':VERSION,'product':'BihuaInput','profile':json.loads(release_profile.LOCK_PATH.read_text(encoding='utf-8'))['profile_id'],'files':{}}
+    manifest={'version':VERSION,'product':'BihuaInput','profile':json.loads(release_profile.LOCK_PATH.read_text(encoding='utf-8'))['profile_id'],'frontend_version':'0.5.12','physical_event_protocol':1,'files':{}}
     for path in sorted(APP.rglob('*')):
         if path.is_file() and path.name!='release-manifest.json':
             rel=path.relative_to(APP).as_posix()

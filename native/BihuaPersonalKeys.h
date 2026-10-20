@@ -1,52 +1,30 @@
 #pragma once
 #include <windows.h>
+#include "BihuaPhysicalKey.h"
 #include <array>
 #include <atomic>
 #include <memory>
 #include <string>
 #include <thread>
 
-// Read-only projection of the same compiled bindings used by Rime.
-struct BihuaPersonalKeyMap {
-  std::array<UINT,7> letters{},keypad{};
-  bool valid=false,compat_n=false;
-  template<class Reader> static BihuaPersonalKeyMap Read(Reader read){
-    BihuaPersonalKeyMap map;const char* actions[]={"h","s","p","n","z","wildcard","separator"};
-    for(int i=0;i<7;++i){
-      auto letter=read(std::string("bihua_keys/letter/")+actions[i]);
-      auto number=read(std::string("bihua_keys/keypad/")+actions[i]);
-      if(letter.size()!=1||letter[0]<'a'||letter[0]>'z')return {};
-      map.letters[i]=letter[0]-'a'+'A';
-      if(number.size()==4&&number.substr(0,3)=="KP_"&&number[3]>='1'&&number[3]<='9')map.keypad[i]=VK_NUMPAD1+number[3]-'1';
-      else if(number=="KP_Divide")map.keypad[i]=VK_DIVIDE;
-      else if(number=="KP_Multiply")map.keypad[i]=VK_MULTIPLY;
-      else if(number=="KP_Decimal")map.keypad[i]=VK_DECIMAL;
-      else return {};
-      for(int j=0;j<i;++j)if(map.letters[i]==map.letters[j]||map.keypad[i]==map.keypad[j])return {};
-    }
-    map.compat_n=read("bihua_keys/letter_style")=="standard";
-    map.valid=true;return map;
+// Read-only projection shared with ordinary TSF input.
+struct BihuaPersonalKeyMap : BihuaPhysicalBindings {
+  template<class Reader>static BihuaPersonalKeyMap Read(Reader read){
+    BihuaPersonalKeyMap result;
+    static_cast<BihuaPhysicalBindings&>(result)=BihuaPhysicalBindings::Read(read);return result;
   }
   static UINT Physical(const KBDLLHOOKSTRUCT& key){
-    if(!(key.flags&LLKHF_EXTENDED)){
-      switch(key.scanCode){
-        case 0x4f:return VK_NUMPAD1;case 0x50:return VK_NUMPAD2;case 0x51:return VK_NUMPAD3;
-        case 0x4b:return VK_NUMPAD4;case 0x4c:return VK_NUMPAD5;case 0x4d:return VK_NUMPAD6;
-        case 0x47:return VK_NUMPAD7;case 0x48:return VK_NUMPAD8;case 0x49:return VK_NUMPAD9;
-        case 0x53:return VK_DECIMAL;
-        case 0x37:return VK_MULTIPLY;
-      }
-    }else if(key.scanCode==0x35)return VK_DIVIDE;
-    return key.vkCode;
+    return BihuaPhysicalKey::Normalize(key.vkCode,key.scanCode,!!(key.flags&LLKHF_EXTENDED));
   }
-  int Action(const KBDLLHOOKSTRUCT& key) const {
-    UINT value=Physical(key);
-    for(int i=0;i<5;++i)if(value==letters[i]||value==keypad[i])return i;
-    if(compat_n&&value=='N')return 3;
+  int Action(const KBDLLHOOKSTRUCT& key)const{
+    auto value=Physical(key);
     if(value==VK_BACK)return 5;
     if(value==VK_RETURN)return 6;
     if(value==VK_ESCAPE)return 7;
-    if(value==letters[5]||value==letters[6]||value==keypad[5]||value==keypad[6])return 8;
+    BihuaPhysicalEventV1 event;event.vk=key.vkCode;event.scan=key.scanCode;
+    event.flags=(key.flags&LLKHF_EXTENDED)?BihuaPhysicalEventV1::Extended:0;
+    int action=Resolve(event,true);
+    if(action>=0)return action<5?action:8;
     if(value>=0x30&&value<=0x5a||value>=VK_NUMPAD0&&value<=VK_DIVIDE||value>=VK_OEM_1&&value<=VK_OEM_102||value==VK_SPACE)return 9;
     return -1;
   }
@@ -110,11 +88,11 @@ class BihuaPersonalKeyCapture {
   }
   // The same pure transition runs in the real hook and the native probe.
   struct Ledger {
-    std::array<bool,512> held{},eaten{};
+    std::array<bool,1024> held{},eaten{};
     bool Any()const {for(bool value:eaten)if(value)return true;return false;}
     bool Route(const KBDLLHOOKSTRUCT& key,bool down,bool armed,const BihuaPersonalKeyMap& map,int& action){
       action=-1;if(key.flags&LLKHF_INJECTED)return false;
-      unsigned id=(key.scanCode&255)+((key.flags&LLKHF_EXTENDED)?256:0);
+      unsigned id=(key.scanCode?(key.scanCode&255):512+(key.vkCode&255))+((key.flags&LLKHF_EXTENDED)?256:0);
       if(!down){bool eat=eaten[id];held[id]=eaten[id]=false;return eat;}
       if(held[id])return eaten[id];held[id]=true;
       if(!armed)return false;
@@ -148,6 +126,7 @@ class BihuaPersonalKeyCapture {
     if(self->accepting&&(!self->allowed||self->requested!=self->lease.serial||GetForegroundWindow()!=self->lease.front||FocusOf(self->lease.front)!=self->lease.focus))self->Suspend();
     int action=-1;bool eat=self->ledger.Route(key,down,self->accepting&&self->allowed,self->lease.map,action);
     if(eat&&down&&action>=0)self->Notify(action);
+    if(key.vkCode==VK_NUMLOCK)return CallNextHookEx(nullptr,code,wp,lp);
     if(!self->accepting&&self->hook&&!self->ledger.Any()){UnhookWindowsHookEx(self->hook);self->hook=nullptr;}
     return eat?1:CallNextHookEx(nullptr,code,wp,lp);
   }

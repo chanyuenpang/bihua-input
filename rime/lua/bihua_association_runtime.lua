@@ -91,6 +91,7 @@ local function first_prediction_page(ctx,env)
 end
 
 function M.before_key(key,ctx)
+  if ctx:get_property('bihua_symbol_active')~='' or ctx:get_property('bihua_symbol_transition')~='' then return end
   local env=sessions[ctx:get_property("bihua_feedback_session")]
   if not env then return end
   env.association=env.association_store.state
@@ -128,6 +129,10 @@ function M.before_key(key,ctx)
 end
 
 function M.filter(input,ctx)
+  if ctx:get_property('bihua_symbol_active')~='' or ctx:get_property('bihua_symbol_transition')~='' then
+    for candidate in input:iter() do yield(candidate) end
+    return
+  end
   local env=sessions[ctx:get_property("bihua_feedback_session")]
   local carry=env and env.association_carry
   if not carry or not ctx.input:match("^[hspnz?]+$") then
@@ -204,6 +209,14 @@ function M.init(env)
   context:set_property("bihua_loaded_relations", tostring(loaded))
   context:set_property("bihua_personal_storage_status", env.association_store.status)
   env.association_commit = context.commit_notifier:connect(function(ctx)
+    if ctx:get_property('bihua_symbol_neutral_commit')=='1' then
+      if env.feedback_episode then env.feedback_episode:abandon() end
+      env.association=env.association_store.state
+      env.association:boundary();env.association_depth=0
+      env.association_pending=false;env.association_carry=nil
+      ctx:set_property('bihua_carried_count','');persist(ctx,env)
+      return
+    end
     local close_after_commit = ctx:get_property("bihua_close_after_commit") == "1"
     ctx:set_property("bihua_close_after_commit", "")
     env.association = env.association_store.state
@@ -260,6 +273,7 @@ function M.init(env)
     end
   end)
   env.association_update = context.update_notifier:connect(function(ctx)
+    if ctx:get_property('bihua_symbol_active')~='' or ctx:get_property('bihua_symbol_transition')~='' then return end
     if env.association_updating then return end
     if ctx.composition:empty() or not ctx.composition:back():has_tag("prediction") then
       ctx:set_property("bihua_prediction_menu_active","")

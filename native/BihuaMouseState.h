@@ -4,6 +4,7 @@
 // One pending intent, bound to the focus generation that produced its pixels.
 struct BihuaMouseState {
   static constexpr int Candidate = 18;
+  static constexpr int Separator=19,SymbolToggle=20,SymbolCancel=21;
   uint32_t session = 0, generation = 0, serial = 0;
   uint32_t token = 0, pending_session = 0, pending_generation = 0;
   uint64_t projection = 1, pending_projection = 0;
@@ -19,7 +20,7 @@ struct BihuaMouseState {
   void InvalidateProjection() { ++projection; }
   uint32_t Queue(int intent, uint64_t now, uint32_t displayed_generation,
                  uint64_t displayed_projection = 0, int absolute_index = -1) {
-    if (displayed_generation != generation || !session || token || intent < 0 || intent > Candidate ||
+    if (displayed_generation != generation || !session || token || intent < 0 || intent > SymbolCancel ||
         (displayed_projection && displayed_projection != projection) ||
         (intent == Candidate && (absolute_index < 0 || !displayed_projection))) return 0;
     serial = (serial + 1) & 0x7fffffff;

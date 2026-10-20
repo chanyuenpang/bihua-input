@@ -52,7 +52,12 @@ static LRESULT CALLBACK proc(HWND hwnd,UINT message,WPARAM wp,LPARAM lp){
     // user's system Caps Lock. TSF sees the same GetKeyState result as a key.
     if(wp==VK_CAPITAL){BYTE state[256]{};GetKeyboardState(state);state[VK_CAPITAL]^=1;SetKeyboardState(state);}
     LPARAM info=1|(MapVirtualKeyW(static_cast<UINT>(wp),MAPVK_VK_TO_VSC)<<16)|(lp&(1L<<24));if(manager&&SUCCEEDED(manager.As(&keys))){keys->TestKeyDown(wp,info,&eaten);if(eaten)keys->KeyDown(wp,info,&eaten);}last_down_eaten=!!eaten;if(!eaten){SendMessageW(field,WM_KEYDOWN,wp,info);if(wp==VK_RETURN)SendMessageW(field,WM_CHAR,L'\r',info);else if(wp>=L'A'&&wp<=L'Z')SendMessageW(field,WM_CHAR,((GetKeyState(VK_CAPITAL)&1)?L'A':L'a')+wp-L'A',info);else if(wp>=L'0'&&wp<=L'9')SendMessageW(field,WM_CHAR,wp,info);else if(wp>=VK_NUMPAD0&&wp<=VK_NUMPAD9)SendMessageW(field,WM_CHAR,L'0'+wp-VK_NUMPAD0,info);else if(wp==VK_SPACE)SendMessageW(field,WM_CHAR,L' ',info);else if(wp==VK_BACK)SendMessageW(field,WM_CHAR,L'\b',info);}PostMessageW(hwnd,WM_APP+96,wp,info|static_cast<LPARAM>(0xc0000000u));return 1;}
-  if(message==WM_APP+102){BYTE state[256]{};GetKeyboardState(state);state[VK_CAPITAL]=static_cast<BYTE>((state[VK_CAPITAL]&~1)|(wp?1:0));SetKeyboardState(state);return 1;}
+  if(message==WM_APP+102||message==WM_APP+105){BYTE state[256]{};GetKeyboardState(state);int key=message==WM_APP+105?VK_NUMLOCK:VK_CAPITAL;state[key]=static_cast<BYTE>((state[key]&~1)|(wp?1:0));SetKeyboardState(state);return 1;}
+  if(message==WM_APP+104){ComPtr<ITfKeystrokeMgr> keys;BOOL eaten=FALSE;
+    // Explicit physical scan/extended identity, including Num-Lock-off VKs.
+    LPARAM info=1|(lp&0x01ff0000);
+    if(manager&&SUCCEEDED(manager.As(&keys))){keys->TestKeyDown(wp,info,&eaten);if(eaten)keys->KeyDown(wp,info,&eaten);}
+    last_down_eaten=!!eaten;PostMessageW(hwnd,WM_APP+96,wp,info|static_cast<LPARAM>(0xc0000000u));return 1;}
   if(message==WM_APP+103){SetWindowTextW(field,L"国");SendMessageW(field,EM_SETSEL,0,1);return 1;}
   if(message==WM_APP+96){ComPtr<ITfKeystrokeMgr> keys;BOOL eaten=FALSE;if(manager&&SUCCEEDED(manager.As(&keys))){keys->TestKeyUp(wp,lp,&eaten);if(eaten)keys->KeyUp(wp,lp,&eaten);}last_up_eaten=!!eaten;if(!eaten)SendMessageW(field,WM_KEYUP,wp,lp);return 1;}
   if(message==WM_APP+101){ComPtr<ITfKeystrokeMgr> keys;BOOL eaten=FALSE;

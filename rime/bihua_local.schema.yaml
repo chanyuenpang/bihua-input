@@ -32,6 +32,8 @@ bihua_character:
   user_dict: bihua_mvp_character_v1
 menu:
   page_size: 9
+bihua_symbols:
+  items: [ '，', '。', '？', '！', '、', '；', '：', '“', '”', '‘', '’', '（', '）', '【', '】', '《', '》', '…', '—', '·', '￥', '+', '-', '*', '/', '=', '%', ',', '.', '?', '!', '#', '@', '&', '_', '\' ]
 simplifier:
   option_name: simplification
   opencc_config: t2s.json

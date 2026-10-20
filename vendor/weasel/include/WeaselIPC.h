@@ -1,10 +1,12 @@
-﻿#pragma once
+﻿// Bihua physical event v1
+#pragma once
 #include <WeaselIPCData.h>
 #include <WeaselUtility.h>
 #include <windows.h>
 #include <functional>
 #include <memory>
 #include <KeyEvent.h>
+#include <BihuaPhysicalKey.h>
 
 #define WEASEL_IPC_WINDOW L"WeaselIPCWindow_1.0"
 #define WEASEL_IPC_PIPE_NAME L"WeaselNamedPipe"
@@ -41,6 +43,9 @@ enum WEASEL_IPC_COMMAND {
   WEASEL_IPC_MOUSE_KEYBOARD_MODE,
   WEASEL_IPC_MOUSE_MODE_TAKE,
   WEASEL_IPC_MOUSE_SELECTION,
+  WEASEL_IPC_PHYSICAL_CAPABILITY,
+  WEASEL_IPC_PHYSICAL_KEY,
+  WEASEL_IPC_PHYSICAL_QUERY,
   WEASEL_IPC_LAST_COMMAND
 };
 
@@ -72,6 +77,7 @@ struct RequestHandler {
                                EatLine eat) {
     return FALSE;
   }
+  virtual DWORD PhysicalKeyEvent(const BihuaPhysicalEventV1& event,DWORD session,EatLine eat,bool query){return 0;}
   virtual void CommitComposition(DWORD session_id) {}
   virtual void ClearComposition(DWORD session_id) {}
   virtual void SelectCandidateOnCurrentPage(size_t index, DWORD session_id) {}
@@ -133,6 +139,8 @@ class Client {
   // 请求服务处理按键消息
   bool ProcessKeyEvent(KeyEvent const& keyEvent);
   // 上屏正在編輯的文字
+  bool ProcessPhysicalKeyEvent(UINT vk,LPARAM info,const KeyEvent& legacy);
+  bool IsPhysicalKeyBound(UINT vk,LPARAM info);
   bool CommitComposition();
   // 清除正在編輯的文字
   bool ClearComposition();

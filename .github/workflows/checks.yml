@@ -26,3 +26,5 @@ jobs:
         run: python -B scripts/Test-Personal-Stroke-Save.py
       - name: Verify installer migration and rollback
         run: python -B scripts/Test-Release-Transactions.py
+      - name: Verify physical key bindings and reassignment
+        run: python -B scripts/Test-Physical-Key-Bindings.py

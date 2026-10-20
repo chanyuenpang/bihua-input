@@ -71,7 +71,7 @@ int wmain(int argc,wchar_t** argv) {
   if(machine) {
     wchar_t program_files[32768]{};
     if(!GetEnvironmentVariableW(L"ProgramFiles",program_files,32768))return finish("program_directory",E_FAIL);
-    const auto destination=std::filesystem::path(program_files)/L"BihuaInputMethod"/L"0.5.11";
+    const auto destination=std::filesystem::path(program_files)/L"BihuaInputMethod"/L"0.5.12";
     std::error_code error;
     std::filesystem::create_directories(destination,error);
     if(error)return finish("protected_directory",HRESULT_FROM_WIN32(error.value()));

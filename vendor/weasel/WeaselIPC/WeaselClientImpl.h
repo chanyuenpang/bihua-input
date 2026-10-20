@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// Bihua physical event v1
+#pragma once
 #include <WeaselIPC.h>
 #include <PipeChannel.h>
 
@@ -18,6 +19,9 @@ class ClientImpl {
   void EndMaintenance();
   bool Echo();
   bool ProcessKeyEvent(KeyEvent const& keyEvent);
+  bool ProcessPhysicalKeyEvent(UINT vk,LPARAM info,const KeyEvent& legacy);
+  bool IsPhysicalKeyBound(UINT vk,LPARAM info);
+  DWORD PhysicalRequest(UINT vk,LPARAM info,const KeyEvent& legacy,bool query);
   bool CommitComposition();
   bool ClearComposition();
   bool SelectCandidateOnCurrentPage(size_t index);
@@ -40,6 +44,7 @@ class ClientImpl {
   bool _Active() const { return channel.Connected() && session_id != 0; }
 
  private:
+  int physical_capability=-1;
   UINT session_id;
   std::wstring app_name;
   bool is_ime;

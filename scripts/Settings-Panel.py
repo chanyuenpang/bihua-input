@@ -192,6 +192,7 @@ class Settings:
         for name, keys in GROUPS.items():
             settings[name] = all(any(row.get('accept') == key and row.get('send') == send and row.get('when') == 'has_menu' for row in bindings) for key, send in keys if key != 'ISO_Left_Tab')
         settings['page_keypad'] = bool(value('bihua_keys/page_keypad', True))
+        settings['symbol_toggle'] = value('bihua_keys/symbol_toggle','Num_Lock')
         for device, presets in [('letter', LETTER), ('keypad', KEYPAD)]:
             settings[device+'_style'] = str(value('bihua_keys/'+device+'_style', 'standard'))
             settings[device+'_keys'] = value('bihua_keys/'+device, presets['standard'].copy())
@@ -243,6 +244,7 @@ class Settings:
             updates['bihua_keys/'+device] = key_settings[device+'_keys']
             updates['bihua_keys/'+device+'_style'] = key_settings[device+'_style']
         updates['bihua_keys/page_keypad'] = settings['page_keypad']
+        updates['bihua_keys/symbol_toggle'] = key_settings['symbol_toggle']
         changed = [patch_text(existing[0], updates), patch_text(existing[1], {key:value for key,value in style_updates.items() if style_patch.get(key,REMOVE)!=value})]
         identity = secrets.token_urlsafe(20)
         self.previews[identity] = (time.monotonic(), existing, changed, updates,style_updates)
@@ -274,7 +276,7 @@ class Settings:
                 for key in ['bihua_matcher/personal_association', 'bihua_matcher/static_association', 'bihua_association/pages', 'menu/page_size']:
                     if get(compiled, key) != updates[key]:
                         raise RuntimeError('编译配置未加载设置：' + key)
-                for key in ('bihua_keys/letter','bihua_keys/keypad','bihua_keys/letter_style','bihua_keys/keypad_style','bihua_keys/page_keypad'):
+                for key in ('bihua_keys/letter','bihua_keys/keypad','bihua_keys/letter_style','bihua_keys/keypad_style','bihua_keys/page_keypad','bihua_keys/symbol_toggle'):
                     actual=get(compiled,key)
                     if key.endswith('_style'): actual=str(actual)
                     if actual != updates[key]:

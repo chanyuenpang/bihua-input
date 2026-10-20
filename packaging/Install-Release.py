@@ -117,7 +117,7 @@ def powershell(script):
     return result.stdout.decode('utf-8-sig',errors='replace').strip()
 def verify():
     manifest=json.loads((APP/'release-manifest.json').read_text(encoding='utf-8-sig'))
-    assert manifest['product']=='BihuaInput' and manifest['version']=='0.6.30'
+    assert manifest['product']=='BihuaInput' and manifest['version']=='0.6.31'
     for name,expected in manifest['files'].items():
         target=(APP/name).resolve();assert target.is_relative_to(APP)
         if not target.is_file() or hashlib.sha256(target.read_bytes()).hexdigest()!=expected:raise ValueError('安装文件损坏：'+name)
@@ -158,10 +158,10 @@ def restore_task(xml,backup):
     elif current:run(['schtasks.exe','/Delete','/TN','BihuaInputMethod','/F'],capture_output=True)
 def helper(mode,*args):
     output=APP/('profile-'+uuid.uuid4().hex+'.json')
-    run([APP/'BihuaProfileSetup.exe',mode,Path(os.environ['ProgramFiles'])/'BihuaInputMethod/0.5.11',output,*args])
+    run([APP/'BihuaProfileSetup.exe',mode,Path(os.environ['ProgramFiles'])/'BihuaInputMethod/0.5.12',output,*args])
     return json.loads(output.read_text(encoding='utf-8-sig'))
 def machine_profile():
-    dest=Path(os.environ['ProgramFiles'])/'BihuaInputMethod/0.5.11'
+    dest=Path(os.environ['ProgramFiles'])/'BihuaInputMethod/0.5.12'
     key=r'Software\Classes\CLSID\{1D31BF35-F1B8-4352-980E-B337264D82FB}\InprocServer32'
     good=True
     for view,name in [(winreg.KEY_WOW64_64KEY,'bihua64.dll'),(winreg.KEY_WOW64_32KEY,'bihua32.dll')]:
@@ -182,6 +182,8 @@ def machine_profile():
 def install():
     verify()
     physical_install_directory()
+    if APP.resolve()!= (HOME/'0.6.31').resolve():raise ValueError('安装目录不是本机用户目录，请双击安装程序')
+    machine_profile()
     if RECEIPT.exists():
         old=json.loads(RECEIPT.read_text(encoding='utf-8-sig'))
         if old.get('status')=='installed':
@@ -191,8 +193,6 @@ def install():
             helper('--activate');run(['schtasks','/Run','/TN','BihuaInputMethod'],capture_output=True)
             wait_for_server()
             return {'result':'PASS','already_installed':True,'frontend_reload_policy':'reopen_existing_applications'}
-    if APP.resolve()!= (HOME/'0.6.30').resolve():raise ValueError('安装目录不是本机用户目录，请双击安装程序')
-    machine_profile()
     backup=HOME/'installer-backups'/uuid.uuid4().hex;backup.mkdir(parents=True)
     old_profile=helper('--inspect')
     rime=reg_read(r'Software\Rime\Weasel','RimeUserDir')
@@ -253,7 +253,7 @@ def install():
         (APP/'settings-script.txt').write_text(str(APP/'scripts/Open-Settings.ps1')+'\n',encoding='utf-8')
         setreg(r'Software\Rime\Weasel','RimeUserDir',str(user))
         setreg(r'Software\Microsoft\Windows\CurrentVersion\Run','BihuaWeasel','schtasks.exe /Run /TN "BihuaInputMethod"')
-        previous_global.write_text(json.dumps({'status':'installed','version':'0.6.30','directory':str(APP)},indent=2),encoding='utf-8')
+        previous_global.write_text(json.dumps({'status':'installed','version':'0.6.31','directory':str(APP)},indent=2),encoding='utf-8')
         create_task()
         run([APP/'WeaselDeployer.exe','/deploy'])
         assert (user/'build/bihua_mvp.schema.yaml').exists(),'输入方案编译失败'
@@ -261,7 +261,7 @@ def install():
         run(['schtasks.exe','/Run','/TN','BihuaInputMethod'],capture_output=True);time.sleep(1)
         wait_for_server()
         path=r'Software\Microsoft\Windows\CurrentVersion\Uninstall\BihuaInput'
-        for name,value in {'DisplayName':'笔画输入法','DisplayVersion':'0.6.30','Publisher':'笔画输入法项目','InstallLocation':str(APP),'UninstallString':'"'+str(APP/'Uninstall.exe')+'"'}.items():setreg(path,name,value)
+        for name,value in {'DisplayName':'笔画输入法','DisplayVersion':'0.6.31','Publisher':'笔画输入法项目','InstallLocation':str(APP),'UninstallString':'"'+str(APP/'Uninstall.exe')+'"'}.items():setreg(path,name,value)
         for name in ['NoModify','NoRepair']:setreg(path,name,1,winreg.REG_DWORD)
         start=Path(os.environ['APPDATA'])/'Microsoft/Windows/Start Menu/Programs/笔画输入法';start.mkdir(parents=True,exist_ok=True)
         for name,target in [('笔画设置',APP/'BihuaSettingsLauncher.exe'),('卸载笔画输入法',APP/'Uninstall.exe')]:
@@ -273,7 +273,7 @@ def install():
                 powershell('$s=(New-Object -ComObject WScript.Shell).CreateShortcut('+psquote(temporary)+');$s.TargetPath='+psquote(target)+';$s.Save()')
                 put(start/(name+'.lnk'),temporary.read_bytes())
             finally:temporary.unlink(missing_ok=True)
-        record.update(status='installed',shortcuts=str(start));RECEIPT.write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf-8')
+        record.update(status='installed',version='0.6.31',frontend_version='0.5.12',physical_event_protocol=1,shortcuts=str(start));RECEIPT.write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf-8')
         return {'result':'PASS','directory':str(APP),'user_data_preserved':True,'frontend_reload_policy':'reopen_existing_applications'}
     except BaseException:
         rollback(record)
@@ -319,9 +319,13 @@ def validate():
     run([APP/'python/python.exe','-B',APP/'scripts/release_probe.py',APP,user,APP/'runtime-validation.json'])
     run([APP/'python/python.exe','-B',APP/'scripts/mouse_probe.py',APP,APP/'.mouse-validation',APP/'mouse-validation.json'])
     run([APP/'python/python.exe','-B',APP/'scripts/carry_probe.py',APP,APP/'.carry-validation',APP/'carry-validation.json'],timeout=150)
+    run([APP/'python/python.exe','-B',APP/'scripts/Test-Symbol-Mode.py','--runtime',APP,'--packaged','--user',APP/'.symbol-validation','--report',APP/'symbol-validation.json'])
+    frontend=c.WinDLL(str(APP/'bihua64.dll'));protocol=frontend.BihuaGetPhysicalKeyProtocolVersion;protocol.argtypes=[];protocol.restype=w.UINT
+    assert protocol()==1,'Windows frontend lacks physical event v1'
     run([APP/'python/python.exe','-B',APP/'scripts/Native-Settings.py','--rime-dir',user,'--smoke',APP/'settings-validation.json'])
     assert json.loads((APP/'settings-validation.json').read_text(encoding='utf-8-sig'))['result']=='PASS'
     result={'result':'PASS','files_verified':count,'runtime':json.loads((APP/'runtime-validation.json').read_text(encoding='utf-8-sig')),'mouse':json.loads((APP/'mouse-validation.json').read_text(encoding='utf-8-sig')),'carry':json.loads((APP/'carry-validation.json').read_text(encoding='utf-8-sig')),'settings':True,'scheduler_query':True,'windows_registration_tested':False}
+    result['symbols']=json.loads((APP/'symbol-validation.json').read_text(encoding='utf-8-sig'));result['physical_event_protocol']=1
     (APP/'validation-results.json').write_text(json.dumps(result,indent=2),encoding='utf-8');return result
 if __name__=='__main__':
     try:
