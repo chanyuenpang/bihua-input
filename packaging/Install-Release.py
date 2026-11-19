@@ -117,7 +117,7 @@ def powershell(script):
     return result.stdout.decode('utf-8-sig',errors='replace').strip()
 def verify():
     manifest=json.loads((APP/'release-manifest.json').read_text(encoding='utf-8-sig'))
-    assert manifest['product']=='BihuaInput' and manifest['version']=='0.6.31'
+    assert manifest['product']=='BihuaInput' and manifest['version']=='0.6.44'
     for name,expected in manifest['files'].items():
         target=(APP/name).resolve();assert target.is_relative_to(APP)
         if not target.is_file() or hashlib.sha256(target.read_bytes()).hexdigest()!=expected:raise ValueError('安装文件损坏：'+name)
@@ -179,10 +179,42 @@ def machine_profile():
     if not shell.ShellExecuteExW(c.byref(info)):raise RuntimeError('安装输入法组件需要管理员确认；尚未更改输入方案')
     kernel.WaitForSingleObject(info.process,120000);kernel.CloseHandle(info.process)
     if not output.exists() or json.loads(output.read_text(encoding='utf-8-sig')).get('phase')!='machine_registered':raise RuntimeError('Windows输入法组件注册未完成')
+def write_installed_file(target,contents):
+    if target.suffix.lower()!='.lnk':
+        target.write_bytes(contents)
+        return
+    # A mapped Start-menu link cannot be truncated or replaced in place.
+    # Retire its name first if necessary; existing readers retain the old file.
+    temporary=target.with_name('bihua-'+uuid.uuid4().hex+'.lnk')
+    try:
+        temporary.write_bytes(contents)
+        try:os.replace(temporary,target)
+        except OSError as error:
+            if getattr(error,'winerror',None) not in (5,32,1224) or not target.is_file():raise
+            retired=target.with_name('.bihua-retired-'+uuid.uuid4().hex+'.tmp')
+            os.rename(target,retired)
+            try:os.rename(temporary,target)
+            except BaseException:
+                os.rename(retired,target)
+                raise
+            try:retired.unlink()
+            except OSError:
+                kernel=c.WinDLL('kernel32',use_last_error=True)
+                kernel.SetFileAttributesW.argtypes=[w.LPCWSTR,w.DWORD]
+                kernel.SetFileAttributesW(str(retired),2)
+                print('Previous shortcut still mapped; retained: '+str(retired),flush=True)
+    finally:temporary.unlink(missing_ok=True)
+
+
 def install():
     verify()
     physical_install_directory()
-    if APP.resolve()!= (HOME/'0.6.31').resolve():raise ValueError('安装目录不是本机用户目录，请双击安装程序')
+    if APP.resolve()!= (HOME/'0.6.44').resolve():raise ValueError('安装目录不是本机用户目录，请双击安装程序')
+    previous_global = HOME / 'installation.json'
+    if previous_global.is_file():
+        previous = json.loads(previous_global.read_text(encoding='utf-8-sig')).get('version', '')
+        if previous.startswith('0.6.') and previous[4:].isdecimal() and 31 < int(previous[4:]) != 44:
+            raise RuntimeError('当前安装使用更新的本地开发组件，请保留现有版本。')
     machine_profile()
     if RECEIPT.exists():
         old=json.loads(RECEIPT.read_text(encoding='utf-8-sig'))
@@ -198,7 +230,6 @@ def install():
     rime=reg_read(r'Software\Rime\Weasel','RimeUserDir')
     user=Path(rime['value']) if rime and Path(rime['value']).exists() else Path(os.environ['APPDATA'])/'Rime'
     user.mkdir(parents=True,exist_ok=True)
-    previous_global=HOME/'installation.json'
     global_bytes=previous_global.read_bytes() if previous_global.exists() else None
     if global_bytes: (backup/'installation.json').write_bytes(global_bytes)
     previous_task=task_xml()
@@ -207,10 +238,10 @@ def install():
         target=Path(target)
         for item in record['files']:
             if item['path']==str(target):
-                target.write_bytes(contents);item['installed_hash']=hashlib.sha256(contents).hexdigest();return
+                write_installed_file(target,contents);item['installed_hash']=hashlib.sha256(contents).hexdigest();return
         existing=target.exists();saved=backup/('file-'+str(len(record['files'])))
         if existing:shutil.copy2(target,saved)
-        target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(contents)
+        target.parent.mkdir(parents=True,exist_ok=True);write_installed_file(target,contents)
         record['files'].append({'path':str(target),'backup':str(saved) if existing else None,'installed_hash':hashlib.sha256(contents).hexdigest()})
     def setreg(path,name,value,kind=winreg.REG_SZ):
         item={'path':path,'name':name,'before':reg_read(path,name),'installed':{'value':value,'type':kind}};reg_write(path,name,item['installed']);record['registry'].append(item)
@@ -253,7 +284,7 @@ def install():
         (APP/'settings-script.txt').write_text(str(APP/'scripts/Open-Settings.ps1')+'\n',encoding='utf-8')
         setreg(r'Software\Rime\Weasel','RimeUserDir',str(user))
         setreg(r'Software\Microsoft\Windows\CurrentVersion\Run','BihuaWeasel','schtasks.exe /Run /TN "BihuaInputMethod"')
-        previous_global.write_text(json.dumps({'status':'installed','version':'0.6.31','directory':str(APP)},indent=2),encoding='utf-8')
+        previous_global.write_text(json.dumps({'status':'installed','version':'0.6.44','directory':str(APP)},indent=2),encoding='utf-8')
         create_task()
         run([APP/'WeaselDeployer.exe','/deploy'])
         assert (user/'build/bihua_mvp.schema.yaml').exists(),'输入方案编译失败'
@@ -261,7 +292,7 @@ def install():
         run(['schtasks.exe','/Run','/TN','BihuaInputMethod'],capture_output=True);time.sleep(1)
         wait_for_server()
         path=r'Software\Microsoft\Windows\CurrentVersion\Uninstall\BihuaInput'
-        for name,value in {'DisplayName':'笔画输入法','DisplayVersion':'0.6.31','Publisher':'笔画输入法项目','InstallLocation':str(APP),'UninstallString':'"'+str(APP/'Uninstall.exe')+'"'}.items():setreg(path,name,value)
+        for name,value in {'DisplayName':'笔画输入法','DisplayVersion':'0.6.44','Publisher':'笔画输入法项目','InstallLocation':str(APP),'UninstallString':'"'+str(APP/'Uninstall.exe')+'"'}.items():setreg(path,name,value)
         for name in ['NoModify','NoRepair']:setreg(path,name,1,winreg.REG_DWORD)
         start=Path(os.environ['APPDATA'])/'Microsoft/Windows/Start Menu/Programs/笔画输入法';start.mkdir(parents=True,exist_ok=True)
         for name,target in [('笔画设置',APP/'BihuaSettingsLauncher.exe'),('卸载笔画输入法',APP/'Uninstall.exe')]:
@@ -273,7 +304,7 @@ def install():
                 powershell('$s=(New-Object -ComObject WScript.Shell).CreateShortcut('+psquote(temporary)+');$s.TargetPath='+psquote(target)+';$s.Save()')
                 put(start/(name+'.lnk'),temporary.read_bytes())
             finally:temporary.unlink(missing_ok=True)
-        record.update(status='installed',version='0.6.31',frontend_version='0.5.12',physical_event_protocol=1,shortcuts=str(start));RECEIPT.write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf-8')
+        record.update(status='installed',version='0.6.44',frontend_version='0.5.12',physical_event_protocol=1,shortcuts=str(start));RECEIPT.write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf-8')
         return {'result':'PASS','directory':str(APP),'user_data_preserved':True,'frontend_reload_policy':'reopen_existing_applications'}
     except BaseException:
         rollback(record)
@@ -281,7 +312,7 @@ def install():
 def rollback(record):
     for item in reversed(record['files']):
         target=Path(item['path'])
-        if item['backup']:shutil.copy2(item['backup'],target)
+        if item['backup']:write_installed_file(target,Path(item['backup']).read_bytes())
         else:target.unlink(missing_ok=True)
     for item in reversed(record['registry']):
         if reg_read(item['path'],item['name'])==item['installed']:reg_write(item['path'],item['name'],item['before'])

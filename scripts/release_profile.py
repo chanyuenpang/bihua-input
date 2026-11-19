@@ -7,6 +7,8 @@ import sys
 
 ROOT=Path(__file__).resolve().parent.parent
 DEFAULT_SOURCE=ROOT/'data/provided-wetype'
+if not DEFAULT_SOURCE.is_dir() and (ROOT.parent/'data/provided-wetype').is_dir():
+    DEFAULT_SOURCE=ROOT.parent/'data/provided-wetype'
 LOCK_PATH=ROOT/'packaging/provided-data.lock.json'
 TABLES=('bihua_local.dict.yaml','bihua_local_data.lua','bihua_local_associations.lua','bihua_local_phrase_data.lua')
 

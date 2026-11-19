@@ -10,7 +10,7 @@ from key_bindings import LETTER, KEYPAD
 import release_profile
 
 ROOT=Path(__file__).resolve().parent.parent
-VERSION='0.6.31'
+VERSION='0.6.44'
 OUT=ROOT/'.verification/release'/VERSION
 APP=OUT/'payload'
 DIST=ROOT/'dist'
@@ -67,7 +67,7 @@ def build():
     (profile/'bihua_mvp.schema.yaml').write_text(yaml.safe_dump(schema,allow_unicode=True,sort_keys=False),encoding='utf-8')
     (profile/'default.custom.yaml').write_text('patch:\n  schema_list:\n    - schema: bihua_mvp\n',encoding='utf-8')
     (profile/'weasel.custom.yaml').write_text('patch:\n  style/font_point: 18\n  style/horizontal: true\n',encoding='utf-8')
-    notice='''笔画输入法 0.6.31 测试版
+    notice='''笔画输入法 0.6.44 测试版
 
 Windows 前端基于 Weasel 0.17.4，GNU GPL v3。修改后前端与后台源代码随安装包提供。
 Rime 1.13.1: BSD-3-Clause, https://github.com/rime/librime
@@ -96,11 +96,13 @@ The installer contains no personal dictionary, personal stroke aliases or learne
     if '--reuse-source' in sys.argv and source_archive.exists():
         cached=source_archive.with_suffix('.cached.zip');shutil.copy2(source_archive,cached)
     with zipfile.ZipFile(source_archive,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
-        for folder in ['native','rime','settings','packaging','assets']:
+        for folder in ['native','rime','settings','packaging','assets','tests']:
             for path in (ROOT/folder).rglob('*'):
                 if path.is_file() and '__pycache__' not in path.parts: z.write(path,'project/'+path.relative_to(ROOT).as_posix())
-        for name in ['Build-Release.py','Build-Open-Profile.py','Build-Local-Profile.py','Build-Provided-Profile.py','release_profile.py','Test-Provided-Data.py','Test-Provided-Rime.py','Test-Keypad-Learning.py','Test-Symbol-Mode.py','Test-Physical-Key-Bindings.py','Settings-Panel.py','Native-Settings.py','appearance.py','Open-Settings.ps1','Manage-Personal.py','personal_data.py','personal_strokes.py','Test-Personal-Strokes.py','Test-Personal-Stroke-Save.py','key_bindings.py','stroke_icons.py','Test-Release-Transactions.py','Test-Installer-Scheduler.py','Test-Appearance.py','Test-Settings-Panel.py','Patch-Single-Menu.py','Patch-Native-Source.py','Patch-Native-Menus.py','Patch-Independent-Profile.py','Patch-Mouse-Input.py','Patch-Physical-Keys.py']:
+        for name in ['Build-Release.py','Build-Open-Profile.py','Build-Local-Profile.py','Build-Provided-Profile.py','release_profile.py','Test-Provided-Data.py','Test-Provided-Rime.py','Test-Keypad-Learning.py','Test-Symbol-Mode.py','Test-Physical-Key-Bindings.py','Settings-Panel.py','Native-Settings.py','appearance.py','Open-Settings.ps1','Manage-Personal.py','personal_data.py','personal_strokes.py','Test-Personal-Strokes.py','Test-Personal-Stroke-Save.py','key_bindings.py','stroke_icons.py','Test-Release-Transactions.py','Test-Bootstrap-Extraction.py','Test-Json-Decode.py','Test-Installer-Scheduler.py','Test-Appearance.py','Test-Settings-Panel.py','Patch-Single-Menu.py','Patch-Native-Source.py','Patch-Native-Menus.py','Patch-Independent-Profile.py','Patch-Mouse-Input.py','Patch-Physical-Keys.py']:
             z.write(ROOT/'scripts'/name,'project/scripts/'+name)
+        for name in ['LICENSE','README.md','THIRD-PARTY.md','requirements-dev.txt','vendor/rxi-json/LICENSE']:
+            z.write(ROOT/name,'project/'+name)
         lock=release_profile.verified_source()
         for name in lock['source_exports']:
             z.write(release_profile.DEFAULT_SOURCE/name,'data/provided-wetype/'+name)
